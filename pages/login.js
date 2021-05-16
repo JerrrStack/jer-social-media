@@ -7,6 +7,7 @@ import {
   InputAdornment,
   IconButton,
   Link,
+  CircularProgress,
 } from "@material-ui/core";
 import ReactCardFlip from "react-card-flip";
 import Head from "next/head";
@@ -92,7 +93,7 @@ const useStyles = makeStyles((theme) => ({
 
   btnStyle: {
     textAlign: "center",
-    padding: 30,
+    padding: 20,
   },
   sendBtn: {
     color: "#FFF",
@@ -325,6 +326,22 @@ function login() {
                   <></>
                 )}
               </div>
+              {formLoading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                  }}
+                >
+                  Logging in.....
+                  <CircularProgress />
+                </div>
+              ) : (
+                <></>
+              )}
+
               <div className={classes.btnStyle}>
                 <Button
                   className={classes.sendBtn}
@@ -335,6 +352,7 @@ function login() {
                   LOGIN
                 </Button>
               </div>
+
               <Box component="div" className={classes.helperAccount}>
                 <Link
                   onClick={handleClick}
@@ -529,6 +547,7 @@ function login() {
                   Sign Up
                 </Button>
               </div>
+
               <Box component="div" className={classes.helperAccount}>
                 <Link
                   onClick={handleClick}
