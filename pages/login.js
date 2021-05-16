@@ -9,6 +9,7 @@ import {
   Link,
 } from "@material-ui/core";
 import ReactCardFlip from "react-card-flip";
+import Head from "next/head";
 import Visibility from "@material-ui/icons/Visibility";
 import VisibilityOff from "@material-ui/icons/VisibilityOff";
 import PersonIcon from "@material-ui/icons/Person";
@@ -232,6 +233,10 @@ function login() {
 
   return (
     <>
+      {" "}
+      <Head>
+        <title>Social Media</title>
+      </Head>
       <Box className={classes.root}>
         <ReactCardFlip isFlipped={isFlipped} flipDirection="horizontal">
           <Box component="div" className={classes.formDiv}>
