@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: jer-social-media
+    runtime: node
+    plan: free
+    buildCommand: >-
+      npm install --no-audit --no-fund &&
+      GENERATE_SOURCEMAP=false
+      NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=448"
+      npx next build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
