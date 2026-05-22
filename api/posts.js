@@ -12,16 +12,25 @@ const {
   removeCommentNotification,
 } = require("../utilsServer/notificationActions");
 
+const findCommentById = (comments, commentId) => {
+  const target = String(commentId);
+  return comments.find((c) => String(c._id) === target);
+};
+
 //Create Post
 router.post("/", validateRequest, async (req, res) => {
   const { text, location, picUrl } = req.body;
   const { userId } = req;
+  const postText = (text || "").trim();
 
-  if (text.length < 1)
-    return res.status(401).send("Text must be atleast 1 character");
+  if (postText.length < 1 && !picUrl) {
+    return res
+      .status(400)
+      .json({ message: "Add text or an image to create a post" });
+  }
 
   try {
-    const createPost = { user: userId, text };
+    const createPost = { user: userId, text: postText || " " };
 
     if (location) createPost.location = location;
     if (picUrl) createPost.picUrl = picUrl;
@@ -92,10 +101,11 @@ router.get("/", validateRequest, async (req, res) => {
       );
       if (foundOwnPosts.length > 0) postsToBeSent.push(...foundOwnPosts);
     }
-    postsToBeSent.length > 0 &&
-      postsToBeSent.sort((a, b) => [
-        new Date(b.createdAt) - new Date(a.createdAt),
-      ]);
+    if (postsToBeSent.length > 0) {
+      postsToBeSent.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+    }
     return res.json(postsToBeSent);
   } catch (error) {
     console.error(error);
@@ -207,11 +217,15 @@ router.put("/unlike/:postId", validateRequest, async (req, res) => {
       return res.status(401).send("Post not liked before");
     }
 
-    const index = post.likes.map((like) =>
-      like.user.toString().indexOf(userId)
+    const index = post.likes.findIndex(
+      (like) => like.user.toString() === userId
     );
 
-    await post.likes.splice(index, 1);
+    if (index === -1) {
+      return res.status(401).send("Post not liked before");
+    }
+
+    post.likes.splice(index, 1);
     await post.save();
 
     //ADD NOTIF
@@ -249,7 +263,7 @@ router.post("/comment/:postId", validateRequest, async (req, res) => {
   try {
     const { postId } = req.params;
     const { userId } = req;
-    const { text } = req.body;
+    const { text, parentCommentId } = req.body;
 
     const post = await Post.findById(postId);
 
@@ -257,37 +271,125 @@ router.post("/comment/:postId", validateRequest, async (req, res) => {
       return res.status(404).send("Post not found");
     }
 
-    if (text.length < 1) {
+    if (!text || text.trim().length < 1) {
       return res.status(401).send("Text must be atleast 1 character");
     }
 
-    const comment = {
-      _id: uuid(),
-      text,
+    if (parentCommentId) {
+      const parent = findCommentById(post.comments, parentCommentId);
+      if (!parent) {
+        return res.status(404).send("Parent comment not found");
+      }
+      // Nested replies allowed (reply to a reply), Facebook-style threading
+    }
+
+    const commentId = uuid();
+    const commentPayload = {
+      _id: commentId,
+      text: text.trim(),
       user: req.userId,
-      date: Date.now(),
+      date: new Date(),
     };
 
-    await post.comments.unshift(comment);
+    if (parentCommentId) {
+      commentPayload.parentCommentId = String(parentCommentId);
+    }
+
+    const newComment = post.comments.create(commentPayload);
+    post.comments.unshift(newComment);
+    post.markModified("comments");
     await post.save();
 
-    //ADD Notif
-    if (post.user.toString() !== userId) {
+    //ADD Notif (top-level comments only notify post owner)
+    if (!parentCommentId && post.user.toString() !== userId) {
       await newCommentNotification(
         postId,
-        comment._id,
+        commentId,
         userId,
         post.user.toString(),
         text
       );
     }
 
-    return res.status(200).json(comment._id);
+    const savedPost = await Post.findById(postId).populate("comments.user");
+    const savedComment = findCommentById(savedPost.comments, commentId);
+
+    return res.status(200).json(
+      savedComment ? savedComment.toObject() : newComment.toObject()
+    );
   } catch (error) {
     console.error(error);
     return res.status(500).send("Server Error");
   }
 });
+
+// LIKE COMMENT
+router.post(
+  "/comment/like/:postId/:commentId",
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { postId, commentId } = req.params;
+      const { userId } = req;
+
+      const post = await Post.findById(postId);
+      if (!post) return res.status(404).send("Post not found");
+
+      const comment = post.comments.find((c) => c._id === commentId);
+      if (!comment) return res.status(404).send("Comment not found");
+
+      if (!comment.likes) comment.likes = [];
+
+      const alreadyLiked = comment.likes.some(
+        (like) => like.user.toString() === userId
+      );
+      if (alreadyLiked) return res.status(401).send("Already liked");
+
+      comment.likes.unshift({ user: userId });
+      post.markModified("comments");
+      await post.save();
+
+      return res.status(200).json({ likes: comment.likes.length });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send("Server Error");
+    }
+  }
+);
+
+// UNLIKE COMMENT
+router.put(
+  "/comment/unlike/:postId/:commentId",
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { postId, commentId } = req.params;
+      const { userId } = req;
+
+      const post = await Post.findById(postId);
+      if (!post) return res.status(404).send("Post not found");
+
+      const comment = post.comments.find((c) => c._id === commentId);
+      if (!comment) return res.status(404).send("Comment not found");
+
+      if (!comment.likes) comment.likes = [];
+
+      const index = comment.likes.findIndex(
+        (like) => like.user.toString() === userId
+      );
+      if (index === -1) return res.status(401).send("Not liked");
+
+      comment.likes.splice(index, 1);
+      post.markModified("comments");
+      await post.save();
+
+      return res.status(200).json({ likes: comment.likes.length });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send("Server Error");
+    }
+  }
+);
 
 //DELETE COMMENT
 router.delete("/:postId/:commentId", validateRequest, async (req, res) => {
@@ -310,11 +412,22 @@ router.delete("/:postId/:commentId", validateRequest, async (req, res) => {
     //DELETE COMMENT FUNCTION
 
     const deleteComment = async () => {
-      const indexOf = post.comments
-        .map((comment) => comment._id)
-        .indexOf(commentId);
+      const idsToDelete = new Set([commentId]);
+      let foundChild = true;
+      while (foundChild) {
+        foundChild = false;
+        post.comments.forEach((c) => {
+          const parentId = c.parentCommentId
+            ? String(c.parentCommentId)
+            : null;
+          if (parentId && idsToDelete.has(parentId) && !idsToDelete.has(c._id)) {
+            idsToDelete.add(c._id);
+            foundChild = true;
+          }
+        });
+      }
 
-      await post.comments.splice(indexOf, 1);
+      post.comments = post.comments.filter((c) => !idsToDelete.has(c._id));
 
       await post.save();
 

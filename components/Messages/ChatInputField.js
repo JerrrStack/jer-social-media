@@ -1,50 +1,53 @@
-import { Box, Button, makeStyles, TextField } from "@material-ui/core";
+import { Box, makeStyles, TextField } from "@material-ui/core";
 import React, { useState, useRef } from "react";
 
-const useStyle = makeStyles({
-  root: {},
-});
+const useStyles = makeStyles((theme) => ({
+  input: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 24,
+      backgroundColor: "#f8fafc",
+    },
+  },
+}));
+
 function ChatInputField({ sendMsg }) {
-  const classes = useStyle();
+  const classes = useStyles();
   const inputRef = useRef();
   const [text, setText] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    sendMsg(text);
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    sendMsg(trimmed);
     setText("");
   };
 
   const handleKeyDown = (e) => {
-    if (e.which === 13) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      inputRef.current.getElementsByTagName("textarea")[0].style.height =
-        "auto";
       handleSubmit(e);
     }
   };
 
   return (
-    <>
-      <Box component="div">
-        <form onSubmit={handleSubmit}>
-          <TextField
-            ref={inputRef}
-            variant="outlined"
-            name="text"
-            multiline
-            rowsMax={3}
-            onKeyDown={handleKeyDown}
-            value={text}
-            autoComplete="off"
-            onChange={(e) => setText(e.target.value)}
-            style={{ borderRadius: 15 }}
-            placeholder="Type Message..."
-            fullWidth
-          />
-        </form>
-      </Box>
-    </>
+    <Box component="form" onSubmit={handleSubmit}>
+      <TextField
+        ref={inputRef}
+        className={classes.input}
+        variant="outlined"
+        name="text"
+        multiline
+        maxRows={4}
+        onKeyDown={handleKeyDown}
+        value={text}
+        autoComplete="off"
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type a message..."
+        fullWidth
+        size="small"
+      />
+    </Box>
   );
 }
 

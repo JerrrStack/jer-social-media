@@ -21,6 +21,8 @@ const PostSchema = new Schema(
         user: { type: Schema.Types.ObjectId, ref: "User" },
         text: { type: String, required: true },
         date: { type: Date, default: Date.now },
+        parentCommentId: { type: String, default: null },
+        likes: [{ user: { type: Schema.Types.ObjectId, ref: "User" } }],
       },
     ],
   },

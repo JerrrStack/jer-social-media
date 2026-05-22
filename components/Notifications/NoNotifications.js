@@ -1,31 +1,21 @@
 import React from "react";
-import { makeStyles } from "@material-ui/core/styles";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
+import { makeStyles, Paper, Typography, Box } from "@material-ui/core";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: "flex",
-    backgroundColor: "#9CC3D5FF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 5,
-  },
-
-  content: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
+    padding: theme.spacing(3, 2),
+    borderRadius: 12,
+    textAlign: "center",
+    color: theme.palette.text.secondary,
   },
 }));
 
-export default function NoPost() {
+export default function NoNotifications() {
   const classes = useStyles();
 
   return (
-    <Card className={classes.root}>
-      <CardContent className={classes.content}>No Notifications.</CardContent>
-    </Card>
+    <Paper className={classes.root} elevation={1}>
+      <Typography variant="body1">No notifications yet.</Typography>
+    </Paper>
   );
 }

@@ -1,23 +1,16 @@
 import React from "react";
-import { makeStyles } from "@material-ui/core/styles";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
+import { makeStyles, Typography, Box } from "@material-ui/core";
 import SentimentVeryDissatisfiedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
 
 const useStyles = makeStyles((theme) => ({
   root: {
     display: "flex",
-    backgroundColor: "#9CC3D5FF",
-    justifyContent: "center",
     alignItems: "center",
-    marginTop: 5,
-  },
-
-  content: {
-    display: "flex",
     justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
+    gap: theme.spacing(1),
+    padding: theme.spacing(3, 2),
+    color: theme.palette.text.secondary,
+    textAlign: "center",
   },
 }));
 
@@ -25,11 +18,9 @@ export default function NoChats() {
   const classes = useStyles();
 
   return (
-    <Card className={classes.root}>
-      <CardContent className={classes.content}>
-        No Chat history found.
-        <SentimentVeryDissatisfiedIcon />
-      </CardContent>
-    </Card>
+    <Box className={classes.root}>
+      <SentimentVeryDissatisfiedIcon fontSize="small" />
+      <Typography variant="body2">No chats yet — search above to start one</Typography>
+    </Box>
   );
 }

@@ -92,7 +92,7 @@ function Search() {
           <div
             className={classes.searchResult}
             onClick={() => {
-              window.location.href = `/${result.username}`;
+              window.location.href = `/${result._id}`;
             }}
           >
             <Avatar

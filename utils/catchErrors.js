@@ -1,22 +1,16 @@
 const catchErrors = (error) => {
-  let errorMsg;
-
-  if (error.response) {
-    // If the request was made and the server not responded with a status code in the range of 2xx
-    errorMsg = error.response.data;
-    console.error(errorMsg);
-  } else if (error.request) {
-    // if the request was made and no response was recevied from server
-    errorMsg = error.request;
-
-    console.error(errorMsg);
-  } else {
-    // if something else happened while making the request
-    errorMsg = error.message;
-
-    console.error(errorMsg);
+  if (error.response?.data) {
+    const data = error.response.data;
+    if (typeof data === "string") return data;
+    if (data.message) return data.message;
+    return "Request failed";
   }
-  return errorMsg;
+
+  if (error.request) {
+    return "No response from server. Check your connection.";
+  }
+
+  return error.message || "Something went wrong";
 };
 
 export default catchErrors;

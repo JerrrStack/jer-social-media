@@ -1,30 +1,29 @@
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
+import Typography from "@material-ui/core/Typography";
+import Box from "@material-ui/core/Box";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: "flex",
-    backgroundColor: "#9CC3D5FF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 5,
-  },
-
-  content: {
-    width: "100%",
+    padding: theme.spacing(2),
+    borderRadius: 8,
+    textAlign: "center",
+    backgroundColor: theme.palette.grey[50],
+    border: `1px dashed ${theme.palette.divider}`,
+    color: theme.palette.text.secondary,
   },
 }));
 
-export default function NoPostUser() {
+export default function NoPostUser({ isOwnProfile }) {
   const classes = useStyles();
 
   return (
-    <Card className={classes.root}>
-      <CardContent className={classes.content}>
-        This person is too lazy to post something.
-      </CardContent>
-    </Card>
+    <Box className={classes.root}>
+      <Typography variant="body2">
+        {isOwnProfile
+          ? "You haven't posted yet. Share something from the home feed."
+          : "No posts from this person yet."}
+      </Typography>
+    </Box>
   );
 }

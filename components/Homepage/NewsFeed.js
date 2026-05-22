@@ -19,38 +19,51 @@ import checkTime from "../../utils/checkTime";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import FavoriteIcon from "@material-ui/icons/Favorite";
 import Comments from "./Comments";
-import AllComments from "./AllComments";
+import CommentThread from "./CommentThread";
+import { normalizeComments } from "../../utils/groupComments";
 import DeletePostPopup from "../Post/DeletePostPopup";
 import { likePost } from "../../utils/postActions";
 import PostModal from "./PostModal";
 import Sidebar from "./Sidebar";
+import { getDisplayName } from "../../utils/displayUser";
+import ProfileLink from "../Profile/ProfileLink";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    backgroundColor: "",
-    marginTop: 25,
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
   },
 
-  media: {
-    textAlign: "center",
-    backgroundColor: "",
-    display: "inline-border",
-  },
   viewMore: {
     textAlign: "center",
   },
   postPicture: {
     cursor: "pointer",
-    width: "auto",
-    height: "800px",
-    [theme.breakpoints.down("sm")]: {
-      width: "100%",
-      height: "auto",
+    display: "block",
+    width: "100%",
+    maxHeight: 480,
+    objectFit: "contain",
+    borderRadius: 8,
+    backgroundColor: theme.palette.grey[100],
+  },
+  media: {
+    textAlign: "center",
+    padding: theme.spacing(0, 2, 2),
+    "&:last-child": {
+      paddingBottom: theme.spacing(2),
     },
   },
 }));
 
-export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
+export default function NewsFeed({
+  user,
+  post,
+  setPosts,
+  setShowToastr,
+  userFollowStats,
+  onFollowStatsChange,
+}) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -60,7 +73,7 @@ export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
     likes.length > 0 &&
     likes.filter((like) => like.user === user._id).length > 0;
 
-  const [comments, setComments] = useState(post.comments);
+  const [comments, setComments] = useState(normalizeComments(post.comments));
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -76,9 +89,17 @@ export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
     <Card className={classes.root}>
       <CardHeader
         avatar={
-          <Link color="inherit" href={`/${post.user.username}`}>
-            <Avatar src={post.user.profilePicUrl} />
-          </Link>
+          <ProfileLink
+            user={post.user}
+            currentUser={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={onFollowStatsChange}
+          >
+            <Avatar
+              alt={getDisplayName(post.user)}
+              src={post.user.profilePicUrl}
+            />
+          </ProfileLink>
         }
         action={
           <>
@@ -134,11 +155,16 @@ export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
           </>
         }
         title={
-          <Link color="inherit" href={`/${post.user.username}`}>
+          <ProfileLink
+            user={post.user}
+            currentUser={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={onFollowStatsChange}
+          >
             <Typography gutterBottom display="inline" variant="body2">
-              {post.user.username}
+              {getDisplayName(post.user)}
             </Typography>
-          </Link>
+          </ProfileLink>
         }
         subheader={
           <Typography
@@ -172,19 +198,18 @@ export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
         <></>
       )}
 
-      <CardContent>
-        {comments.length > 0 &&
-          comments.map((comment, i) => (
-            <AllComments
-              key={comment._id}
-              comment={comment}
-              setComments={setComments}
-              post={post}
-              user={user}
-            />
-          ))}
+      <CardContent style={{ paddingTop: 8, paddingBottom: 8 }}>
+        {comments.length > 0 && (
+          <CommentThread
+            comments={comments}
+            setComments={setComments}
+            post={post}
+            user={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={onFollowStatsChange}
+          />
+        )}
 
-        <br />
         {comments.length > 3 && (
           <Typography className={classes.viewMore} variant="body2">
             <Button color="primary" onClick={() => setShowModal(true)}>
@@ -207,6 +232,8 @@ export default function NewsFeed({ user, post, setPosts, setShowToastr }) {
           setPosts={setPosts}
           setShowToastr={setShowToastr}
           setShowModal={setShowModal}
+          userFollowStats={userFollowStats}
+          onFollowStatsChange={onFollowStatsChange}
         />
       )}
     </Card>

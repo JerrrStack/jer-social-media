@@ -50,7 +50,7 @@ const divFollower = ({ user, setCurrentUser, profileUserId, currentUser }) => {
     };
 
     getFollowers();
-  }, [router.query.username]);
+  }, [router.query.userId]);
 
   return (
     <>

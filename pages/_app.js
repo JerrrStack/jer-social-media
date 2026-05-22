@@ -4,6 +4,7 @@ import Layout from "../components/Layout/Layout";
 import { parseCookies, destroyCookie } from "nookies";
 import baseUrl from "../utils/baseUrl";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
 import { redirectUser } from "../utils/authUser";
 import "../public/style.css";
 
@@ -14,7 +15,7 @@ class MyApp extends App {
     let pageProps = {};
     const protectedRoutes =
       ctx.pathname === "/" ||
-      ctx.pathname === "/[username]" ||
+      ctx.pathname === "/[userId]" ||
       ctx.pathname === "/notifications" ||
       ctx.pathname === "/post/[postId]" ||
       ctx.pathname === "/messages";
@@ -45,6 +46,14 @@ class MyApp extends App {
 
     return (
       <>
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+        />
         {token ? (
           <Layout {...pageProps}>
             <Component {...pageProps} />

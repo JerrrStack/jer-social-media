@@ -9,7 +9,7 @@ const HeadTags = () => (
 
       <link rel="stylesheet" type="text/css" href="/nprogress.css" />
 
-      <title>Social Media</title>
+      <title>SayHi</title>
     </Head>
   </>
 );

@@ -11,54 +11,21 @@ const {
   newFollowerNotification,
   removeFollowerNotification,
 } = require("../utilsServer/notificationActions");
-
-// GET PROFILE INFO OF A USER
-router.get("/:username", validateRequest, async (req, res) => {
-  try {
-    const { username } = req.params;
-
-    const user = await User.findOne({ username: username.toLowerCase() });
-
-    if (!user) {
-      return res.status(404).send("No User Found");
-    }
-
-    const profile = await Profile.findOne({ user: user._id }).populate("user");
-
-    const profileFollowStats = await Follower.findOne({ user: user._id });
-
-    return res.json({
-      profile,
-
-      followersLength:
-        profileFollowStats.followers.length > 0
-          ? profileFollowStats.followers.length
-          : 0,
-
-      followingLength:
-        profileFollowStats.following.length > 0
-          ? profileFollowStats.following.length
-          : 0,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send("Server Error");
-  }
-});
+const findUserByIdOrUsername = require("../utilsServer/findUserByIdOrUsername");
 
 // GET POSTS OF USER
-router.get("/posts/:username", validateRequest, async (req, res) => {
+router.get("/posts/:userId", validateRequest, async (req, res) => {
   try {
-    const { username } = req.params;
+    const { userId } = req.params;
 
-    const user = await User.findOne({ username: username.toLowerCase() });
+    const user = await findUserByIdOrUsername(userId);
 
     if (!user) {
       return res.status(404).send("No user Found");
     }
 
     const posts = await Post.find({ user: user._id })
-      .sort({ createAt: -1 })
+      .sort({ createdAt: -1 })
       .populate("user")
       .populate("comments.user");
 
@@ -162,19 +129,13 @@ router.put("/unfollow/:userToUnfollowId", validateRequest, async (req, res) => {
       return res.status(404).send("User not found");
     }
 
-    const isFollowing =
-      user.following.length >= 0 &&
-      user.following.filter(
-        (following) => following.user.toString() === userToUnfollowId
-      ).length === 0;
+    const removeFollowing = user.following.findIndex(
+      (following) => following.user.toString() === userToUnfollowId
+    );
 
-    if (isFollowing) {
-      return res.status(401).send("User Not Followed before");
+    if (removeFollowing === -1) {
+      return res.status(401).send("User not followed before");
     }
-
-    const removeFollowing = await user.following
-      .map((following) => following.user.toString())
-      .indexOf(userToUnfollowId);
 
     await user.following.splice(removeFollowing, 1);
     await user.save();
@@ -200,30 +161,30 @@ router.put("/unfollow/:userToUnfollowId", validateRequest, async (req, res) => {
 router.post("/update", validateRequest, async (req, res) => {
   try {
     const { userId } = req;
+    const { bio, website, profilePicUrl, coverPicUrl, name } = req.body;
 
-    const { bio, website, profilePicUrl } = req.body;
-
-    let profileInfo = {};
-
-    profileInfo.bio = bio;
-
-    if (website) profileInfo.website = website;
+    const profileUpdate = {};
+    if (bio !== undefined) profileUpdate.bio = bio;
+    if (website !== undefined) profileUpdate.website = website;
 
     await Profile.findOneAndUpdate(
       { user: userId },
-      { $set: profileInfo },
-      { new: true }
+      { $set: profileUpdate },
+      { new: true, upsert: true }
     );
 
-    if (profilePicUrl) {
-      const user = await User.findById(userId);
-      user.profilePicUrl = profilePicUrl;
-      await user.save();
-    }
-    return res.status(200).send("Success");
+    const user = await User.findById(userId);
+    if (profilePicUrl) user.profilePicUrl = profilePicUrl;
+    if (coverPicUrl) user.coverPicUrl = coverPicUrl;
+    if (name && name.trim().length >= 2) user.name = name.trim();
+    await user.save();
+
+    const profile = await Profile.findOne({ user: userId }).populate("user");
+
+    return res.status(200).json(profile);
   } catch (error) {
     console.error(error);
-    return res.status(500).send("Server Error");
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -260,5 +221,41 @@ router.post(
     }
   }
 );
+
+// GET PROFILE (must be last — /:profileId catches single-segment paths only)
+router.get("/:profileId", validateRequest, async (req, res) => {
+  try {
+    const profileId = req.params.profileId;
+
+    const user = await findUserByIdOrUsername(profileId);
+
+    if (!user) {
+      return res.status(404).json({ message: "No user found" });
+    }
+
+    let profile = await Profile.findOne({ user: user._id }).populate("user");
+
+    if (!profile) {
+      await Profile.create({ user: user._id, bio: "", website: "" });
+      profile = await Profile.findOne({ user: user._id }).populate("user");
+    }
+
+    const profilePayload = profile.toObject ? profile.toObject() : { ...profile };
+    if (!profilePayload.user) {
+      profilePayload.user = user.toObject ? user.toObject() : user;
+    }
+
+    const profileFollowStats = await Follower.findOne({ user: user._id });
+
+    return res.json({
+      profile: profilePayload,
+      followersLength: profileFollowStats?.followers?.length ?? 0,
+      followingLength: profileFollowStats?.following?.length ?? 0,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;

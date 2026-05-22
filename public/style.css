@@ -1,5 +1,36 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 html,
 body {
   margin: 0;
   padding: 0;
+  font-family: "Inter", "Roboto", "Helvetica", "Arial", sans-serif;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+a {
+  color: #6366f1;
+}
+
+#nprogress .bar {
+  background: #6366f1 !important;
+  height: 3px !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #6366f1, 0 0 5px #6366f1 !important;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
 }

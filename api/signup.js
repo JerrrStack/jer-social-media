@@ -1,5 +1,4 @@
 const express = require("express");
-const isEmail = require("validator/lib/isEmail");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Profile = require("../models/Profile");
@@ -7,76 +6,97 @@ const Follower = require("../models/Follower");
 const Notification = require("../models/Notification");
 const Chat = require("../models/Chat");
 const bcrypt = require("bcryptjs");
-const regexUserName = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/;
+const {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+} = require("../utils/validation");
+
 const router = express.Router();
 
 router.get("/:username", async (req, res) => {
   const { username } = req.params;
 
   try {
-    if (username.length < 1) return res.status(401).send("Invalid");
-    if (!regexUserName.test(username)) return res.status(401).send("Invalid");
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ message: "Invalid username format" });
+    }
 
-    const user = await User.findOne({ username: username.toLowerCase() });
+    const existing = await User.findOne({
+      username: username.toLowerCase(),
+    });
 
-    if (user) return res.status(401).send("Username already taken");
+    if (existing) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
 
-    return res.status(200).send("Available");
+    return res.status(200).json({ message: "Available" });
   } catch (error) {
     console.error(error);
-    return res.status(401).send("Server error");
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
 router.post("/", async (req, res) => {
-  const { mail, name, username, pass } = req.body.registerUser;
+  const { mail, name, username, pass } = req.body.registerUser || {};
+  const email = mail?.trim().toLowerCase();
+  const displayName = name?.trim();
+  const normalizedUsername = username?.trim().toLowerCase();
 
-  if (!isEmail(mail)) return res.status(401).send("Invalid Email");
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: "Invalid email address" });
+  }
 
-  if (pass.length < 6) {
-    return res.status(401).send("Password must be atleast 6 characters");
+  if (!displayName || displayName.length < 2) {
+    return res.status(400).json({ message: "Name must be at least 2 characters" });
+  }
+
+  if (!isValidUsername(normalizedUsername)) {
+    return res.status(400).json({ message: "Invalid username format" });
+  }
+
+  if (!isValidPassword(pass)) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters" });
   }
 
   try {
-    const existingUser = await User.findOne({ mail });
-
-    if (existingUser) {
-      return res.status(401).send("User already registered");
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already registered" });
     }
 
-    const user = new User({
-      name,
-      username: username.toLowerCase(),
-      email: mail.toLowerCase(),
-      password: pass,
+    const existingUsername = await User.findOne({
+      username: normalizedUsername,
+    });
+    if (existingUsername) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
+
+    const hashedPassword = await bcrypt.hash(pass, 10);
+    const user = await new User({
+      name: displayName,
+      username: normalizedUsername,
+      email,
+      password: hashedPassword,
+    }).save();
+
+    await Promise.all([
+      new Profile({ user: user._id }).save(),
+      new Follower({ user: user._id, followers: [], following: [] }).save(),
+      new Notification({ user: user._id, notifications: [] }).save(),
+      new Chat({ user: user._id, chats: [] }).save(),
+    ]);
+
+    const token = jwt.sign({ userId: user._id }, process.env.jwtSecret, {
+      expiresIn: "7d",
     });
 
-    user.password = await bcrypt.hash(pass, 10);
-
-    await user.save();
-    await new Profile({ user: user._id }).save();
-    await new Follower({
-      user: user._id,
-      followers: [],
-      following: [],
-    }).save();
-    await new Notification({ user: user._id, notifications: [] }).save();
-    await new Chat({ user: user._id, chats: [] }).save();
-
-    const payload = { userId: user._id };
-
-    jwt.sign(
-      payload,
-      process.env.jwtSecret,
-      { expiresIn: "1d" },
-      (err, token) => {
-        if (err) throw err;
-        res.status(200).json(token);
-      }
-    );
+    return res.status(201).json(token);
   } catch (error) {
     console.error(error);
-    return res.status(500).send("Server error");
+    return res.status(500).json({ message: "Server error" });
   }
 });
 

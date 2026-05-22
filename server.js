@@ -22,6 +22,7 @@ const {
   sendMsg,
   deleteMsg,
 } = require("./utilsServer/messageActions");
+const { likeOrUnlikePost } = require("./utilsServer/postActions");
 io.on("connection", (socket) => {
   socket.on("join", async ({ userId }) => {
     const users = await addUser(userId, socket.id);
@@ -32,11 +33,6 @@ io.on("connection", (socket) => {
       });
     }, 10000);
   });
-  socket.on("disconnect", () => {
-    removeUser(socket.id);
-    console.log("User disconnected");
-  });
-
   socket.on("likePost", async ({ postId, userId, like }) => {
     const { success, name, profilePicUrl, username, postByUserId, error } =
       await likeOrUnlikePost(postId, userId, like);
@@ -109,7 +105,9 @@ io.on("connection", (socket) => {
     }
   );
 
-  socket.on("disconnect", () => removeUser(socket.id));
+  socket.on("disconnect", () => {
+    removeUser(socket.id);
+  });
 });
 
 nextApp.prepare().then(() => {

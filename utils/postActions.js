@@ -20,7 +20,7 @@ export const submitNewPost = async (
     const res = await Axios.post("/", { text, taggedUser, picUrl });
 
     setPosts((prev) => [res.data, ...prev]);
-    setCreatePost({ text: "", taggedUser: "" });
+    if (typeof setCreatePost === "function") setCreatePost();
     setError(null);
   } catch (error) {
     const errorMsg = catchErrors(error);
@@ -38,20 +38,39 @@ export const deletePost = async (postId, setPosts) => {
   }
 };
 
-export const postComment = async (postId, user, text, setComments, setText) => {
+export const postComment = async (
+  postId,
+  user,
+  text,
+  setComments,
+  setText,
+  parentCommentId = null
+) => {
   try {
-    const res = await Axios.post(`/comment/${postId}`, { text });
+    const body = { text };
+    if (parentCommentId) {
+      body.parentCommentId = String(parentCommentId);
+    }
+
+    const res = await Axios.post(`/comment/${postId}`, body);
+    const data = res.data;
     const postedComment = {
-      _id: res.data,
-      user,
-      text,
-      date: Date.now(),
+      ...data,
+      _id: data._id,
+      user: data.user || user,
+      text: data.text || text,
+      date: data.date || Date.now(),
+      parentCommentId: data.parentCommentId
+        ? String(data.parentCommentId)
+        : null,
+      likes: data.likes || [],
     };
     setComments((prev) => [postedComment, ...prev]);
     setText("");
+    return postedComment;
   } catch (error) {
     const errorMsg = catchErrors(error);
-    alert(catchErrors(error));
+    alert(errorMsg);
   }
 };
 
@@ -69,12 +88,51 @@ export const likePost = async (postId, userId, setLikes, like = true) => {
   }
 };
 
+const updateCommentLikes = (commentId, userId, add, setComments) => {
+  setComments((prev) =>
+    prev.map((comment) => {
+      if (comment._id !== commentId) return comment;
+      const likes = comment.likes || [];
+      if (add) {
+        if (likes.some((l) => String(l.user) === String(userId))) return comment;
+        return { ...comment, likes: [...likes, { user: userId }] };
+      }
+      return {
+        ...comment,
+        likes: likes.filter((l) => String(l.user) !== String(userId)),
+      };
+    })
+  );
+};
+
+export const likeComment = async (postId, commentId, userId, setComments) => {
+  try {
+    await Axios.post(`/comment/like/${postId}/${commentId}`);
+    updateCommentLikes(commentId, userId, true, setComments);
+  } catch (error) {
+    alert(catchErrors(error));
+  }
+};
+
+export const unlikeComment = async (postId, commentId, userId, setComments) => {
+  try {
+    await Axios.put(`/comment/unlike/${postId}/${commentId}`);
+    updateCommentLikes(commentId, userId, false, setComments);
+  } catch (error) {
+    alert(catchErrors(error));
+  }
+};
+
 export const deleteComment = async (postId, commentId, setComments) => {
   try {
     await Axios.delete(`/${postId}/${commentId}`);
-    setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+    setComments((prev) =>
+      prev.filter(
+        (comment) =>
+          comment._id !== commentId && comment.parentCommentId !== commentId
+      )
+    );
   } catch (error) {
-    const errorMsg = catchErrors(error);
     alert(catchErrors(error));
   }
 };

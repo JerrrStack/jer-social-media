@@ -1,85 +1,42 @@
-import {
-  Avatar,
-  Box,
-  Divider,
-  makeStyles,
-  Paper,
-  Menu,
-  MenuItem,
-  Button,
-} from "@material-ui/core";
-import React, { useState } from "react";
-import MoreVertIcon from "@material-ui/icons/MoreVert";
-const useStyle = makeStyles((theme) => ({
-  MessageContent: {
-    minHeight: "75vh",
-    overflow: "auto",
-  },
+import { Avatar, Box, Divider, makeStyles, Typography } from "@material-ui/core";
+import React from "react";
+import { getDisplayName } from "../../utils/displayUser";
 
-  chatContent: {
+const useStyles = makeStyles((theme) => ({
+  header: {
     display: "flex",
     alignItems: "center",
+    gap: theme.spacing(1.5),
+    padding: theme.spacing(1.5, 2),
+    flexShrink: 0,
+    backgroundColor: theme.palette.background.paper,
   },
-  menuButton: {
-    display: "flex",
-    justifyContent: "flex-end",
+  avatar: {
+    width: 40,
+    height: 40,
   },
-  small: {
-    width: theme.spacing(5),
-    height: theme.spacing(5),
+  name: {
+    fontWeight: 600,
+    fontSize: "1rem",
   },
 }));
-function UserInfo({ chatWithData }) {
-  const classes = useStyle();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  return (
-    <div>
-      <Box component="div" className={classes.chatContent}>
-        <span style={{ marginRight: 5 }}>
-          <Avatar
-            alt="Pic"
-            src={chatWithData.profilePicUrl}
-            className={classes.small}
-          />
-        </span>
-        {chatWithData.name}{" "}
-        {/* <Box component="span" className={classes.menuButton}>
-          <Button
-            aria-controls="simple-menu"
-            aria-haspopup="true"
-            onClick={handleClick}
-          >
-            <MoreVertIcon />
-          </Button>
-          <Menu
-            id="fade-menu"
-            anchorEl={anchorEl}
-            keepMounted
-            open={open}
-            onClose={handleClose}
-          >
-            <MenuItem
-              onClick={handleClose}
-              style={{
-                backgroundColor: "transparent",
-                cursor: "default",
-              }}
-            >
-              Delete
-            </MenuItem>
-          </Menu>
-        </Box> */}
-      </Box>
 
+function UserInfo({ chatWithData }) {
+  const classes = useStyles();
+  const displayName = getDisplayName(chatWithData);
+
+  return (
+    <>
+      <Box className={classes.header}>
+        <Avatar
+          alt={displayName}
+          src={chatWithData.profilePicUrl}
+          className={classes.avatar}
+        />
+        <Typography className={classes.name}>{displayName}</Typography>
+      </Box>
       <Divider />
-    </div>
+    </>
   );
 }
 

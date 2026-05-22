@@ -16,10 +16,13 @@ import {
 } from "@material-ui/core";
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import checkTime from "../../utils/checkTime";
+import { getDisplayName } from "../../utils/displayUser";
+import ProfileLink from "../../components/Profile/ProfileLink";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import FavoriteIcon from "@material-ui/icons/Favorite";
 import Comments from "../../components/Homepage/Comments";
-import AllComments from "../../components/Homepage/AllComments";
+import CommentThread from "../../components/Homepage/CommentThread";
+import { normalizeComments } from "../../utils/groupComments";
 import axios from "axios";
 import DeletePostPopup from "../../components/Post/DeletePostPopup";
 import { likePost } from "../../utils/postActions";
@@ -52,14 +55,17 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function post({ post, errorLoading, user }) {
+function post({ post, errorLoading, user, userFollowStats: initialFollowStats }) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [likes, setLikes] = useState(post.likes);
   const [posts, setPosts] = useState(post);
-  const [comments, setComments] = useState(post.comments);
+  const [comments, setComments] = useState(normalizeComments(post.comments));
   const [showModal, setShowModal] = useState(false);
+  const [userFollowStats, setUserFollowStats] = useState(
+    initialFollowStats || { following: [], followers: [] }
+  );
 
   const isLiked =
     likes.length > 0 &&
@@ -77,9 +83,17 @@ function post({ post, errorLoading, user }) {
     <Card className={classes.root}>
       <CardHeader
         avatar={
-          <Link color="inherit" href={`/${post.user.username}`}>
-            <Avatar src={post.user.profilePicUrl} />
-          </Link>
+          <ProfileLink
+            user={post.user}
+            currentUser={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={setUserFollowStats}
+          >
+            <Avatar
+              alt={getDisplayName(post.user)}
+              src={post.user.profilePicUrl}
+            />
+          </ProfileLink>
         }
         action={
           <>
@@ -130,11 +144,16 @@ function post({ post, errorLoading, user }) {
           </>
         }
         title={
-          <Link color="inherit" href={`/${post.user.username}`}>
+          <ProfileLink
+            user={post.user}
+            currentUser={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={setUserFollowStats}
+          >
             <Typography gutterBottom display="inline" variant="body2">
-              {post.user.username}
+              {getDisplayName(post.user)}
             </Typography>
-          </Link>
+          </ProfileLink>
         }
         subheader={checkTime(post.createdAt)}
       />
@@ -159,19 +178,18 @@ function post({ post, errorLoading, user }) {
         <></>
       )}
 
-      <CardContent>
-        {comments.length > 0 &&
-          comments.map((comment, i) => (
-            <AllComments
-              key={comment._id}
-              comment={comment}
-              setComments={setComments}
-              post={post}
-              user={user}
-            />
-          ))}
+      <CardContent style={{ paddingTop: 8, paddingBottom: 8 }}>
+        {comments.length > 0 && (
+          <CommentThread
+            comments={comments}
+            setComments={setComments}
+            post={post}
+            user={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={setUserFollowStats}
+          />
+        )}
 
-        <br />
         {comments.length > 3 && (
           <Typography className={classes.viewMore} variant="body2">
             <Button color="primary" onClick={() => setShowModal(true)}>
@@ -192,6 +210,8 @@ function post({ post, errorLoading, user }) {
           setComments={setComments}
           setPosts={setPosts}
           setShowModal={setShowModal}
+          userFollowStats={userFollowStats}
+          onFollowStatsChange={setUserFollowStats}
         />
       )}
     </Card>

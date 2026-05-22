@@ -1,4 +1,5 @@
 import React from "react";
+import { getDisplayName, getProfilePath } from "../../utils/displayUser";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import Button from "@material-ui/core/Button";
@@ -39,18 +40,18 @@ export default function Sidebar({ user }) {
         <Button color="inherit">
           <Link
             color="inherit"
-            href={`/${user.username}`}
+            href={getProfilePath(user)}
             className={classes.userContent}
           >
             <Avatar
-              alt="profile pic"
+              alt={getDisplayName(user)}
               src={user.profilePicUrl}
               style={{ marginRight: 10, height: "30px", width: "30px" }}
               size="small"
             />
 
             <Typography display="inline" variant="body2">
-              <span>{user.username}</span>
+              <span>{getDisplayName(user)}</span>
             </Typography>
           </Link>
         </Button>

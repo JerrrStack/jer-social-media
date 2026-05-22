@@ -6,7 +6,9 @@
     "node": "16.x"
   },
   "scripts": {
-    "dev": " nodemon server.js",
+    "dev": "node --openssl-legacy-provider scripts/start-local.js 3001",
+    "dev:3000": "node --openssl-legacy-provider scripts/start-local.js 3000",
+    "dev:3001": "node --openssl-legacy-provider scripts/start-local.js 3001",
     "design": "next dev",
     "build": "node scripts/build.js",
     "start": "node server.js"

@@ -17,6 +17,7 @@ const ChatSchema = new Schema({
             required: true,
           },
           date: { type: Date },
+          read: { type: Boolean, default: false },
         },
       ],
     },

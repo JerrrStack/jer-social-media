@@ -8,22 +8,24 @@ router.get("/:searchText", validateRequest, async (req, res) => {
     const { searchText } = req.params;
     const { userId } = req;
 
-    if (searchText.length === 0) return;
+    if (!searchText || searchText.trim().length === 0) {
+      return res.status(200).json([]);
+    }
 
-    let namePattern = new RegExp(`^${searchText}`);
+    const namePattern = new RegExp(`^${searchText.trim()}`, "i");
 
     const results = await User.find({
-      name: { $regex: namePattern, $options: "i" },
-    });
+      name: { $regex: namePattern },
+    }).limit(20);
 
-    const resultFilter =
-      results.length > 0 &&
-      results.filter((result) => result._id.toString() !== userId);
+    const resultFilter = results.filter(
+      (result) => result._id.toString() !== userId
+    );
 
     return res.status(200).json(resultFilter);
   } catch (error) {
     console.error(error);
-    return res.status(401).send("Server Error");
+    return res.status(500).json({ message: "Server error" });
   }
 });
 

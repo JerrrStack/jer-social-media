@@ -1,49 +1,48 @@
-import {
-  Avatar,
-  Card,
-  CardHeader,
-  Link,
-  makeStyles,
-  Typography,
-} from "@material-ui/core";
+import { Avatar, Box, Typography } from "@material-ui/core";
 import React from "react";
+import { getDisplayName } from "../../utils/displayUser";
 import checkTime from "../../utils/checkTime";
-const useStyles = makeStyles((theme) => ({
-  root: {},
-  small: {
-    width: theme.spacing(3),
-    height: theme.spacing(3),
-  },
-}));
-function FollowerNotification({ notification }) {
-  const classes = useStyles();
+import ProfileLink from "../Profile/ProfileLink";
+import { useNotificationStyles } from "./notificationStyles";
+
+function FollowerNotification({
+  notification,
+  user,
+  userFollowStats,
+  onFollowStatsChange,
+}) {
+  const classes = useNotificationStyles();
+  const displayName = getDisplayName(notification.user);
+
   return (
-    <>
-      <Card className={classes.root}>
-        <CardHeader
-          avatar={
-            <Avatar
-              src={notification.user.profilePicUrl}
-              className={classes.small}
-              component="span"
-            />
-          }
-          action={
-            <Typography variant="caption">
-              {checkTime(notification.date)}
-            </Typography>
-          }
-          title={
-            <>
-              <Link href={`/${notification.user.username}`}>
-                {notification.user.name}
-              </Link>
-              &nbsp;Followed you.
-            </>
-          }
+    <Box className={classes.item}>
+      <ProfileLink
+        user={notification.user}
+        currentUser={user}
+        userFollowStats={userFollowStats}
+        onFollowStatsChange={onFollowStatsChange}
+      >
+        <Avatar
+          src={notification.user.profilePicUrl}
+          className={classes.avatar}
+          alt={displayName}
         />
-      </Card>
-    </>
+      </ProfileLink>
+      <Box className={classes.body}>
+        <Typography className={classes.text}>
+          <ProfileLink
+            user={notification.user}
+            currentUser={user}
+            userFollowStats={userFollowStats}
+            onFollowStatsChange={onFollowStatsChange}
+          >
+            <strong>{displayName}</strong>
+          </ProfileLink>{" "}
+          started following you.
+        </Typography>
+      </Box>
+      <Typography className={classes.time}>{checkTime(notification.date)}</Typography>
+    </Box>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import Button from "@material-ui/core/Button";
+import IconButton from "@material-ui/core/IconButton";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import Grow from "@material-ui/core/Grow";
 import Paper from "@material-ui/core/Paper";
@@ -12,159 +12,194 @@ import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import MailIcon from "@material-ui/icons/Mail";
 import { logoutUser } from "../../utils/authUser";
 import NotificationsIcon from "@material-ui/icons/Notifications";
-import { Avatar, Badge, Link, Typography } from "@material-ui/core";
+import { Box, Link } from "@material-ui/core";
 import SearchBar from "../Navbar/SearchBar";
 import PersonIcon from "@material-ui/icons/Person";
+import { getProfilePath } from "../../utils/displayUser";
+
 const useStyles = makeStyles((theme) => ({
-  root: {},
+  root: {
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "center",
+  },
+  menuButton: {
+    padding: 8,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    backgroundColor: theme.palette.secondary.main,
+    border: `2px solid ${theme.palette.primary.main}`,
+    pointerEvents: "none",
+  },
+  popper: {
+    zIndex: theme.zIndex.modal,
+  },
   paper: {
-    marginRight: theme.spacing(2),
+    minWidth: 220,
+    marginTop: theme.spacing(1),
+    borderRadius: 12,
+    boxShadow: theme.shadows[8],
+    overflow: "hidden",
+  },
+  menuList: {
+    padding: theme.spacing(0.5, 0),
+  },
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing(1.5),
+    padding: theme.spacing(1.25, 2),
+    fontSize: "0.9rem",
+    minHeight: 44,
+  },
+  menuItemLabel: {
+    flex: 1,
+  },
+  menuIcon: {
+    fontSize: 20,
+    flexShrink: 0,
+  },
+  notifPill: {
+    fontSize: "0.7rem",
+    fontWeight: 700,
+    color: "#fff",
+    backgroundColor: theme.palette.secondary.main,
+    borderRadius: 10,
+    padding: "2px 6px",
+    lineHeight: 1.2,
+    flexShrink: 0,
   },
   searchBar: {
-    display: "none ",
+    display: "none",
     [theme.breakpoints.down("xs")]: {
-      display: "block ",
+      display: "flex",
     },
   },
   profile: {
-    display: "none ",
+    display: "none",
     [theme.breakpoints.down("xs")]: {
-      display: "block ",
+      display: "flex",
     },
   },
 }));
 
-export default function CustomMenuButton({ email, user }) {
+export default function CustomMenuButton({ user }) {
   const classes = useStyles();
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
 
   const handleToggle = () => {
-    setOpen((prevOpen) => !prevOpen);
+    setOpen((prev) => !prev);
   };
 
   const handleClose = (event) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+    if (anchorRef.current?.contains(event.target)) {
       return;
     }
-
     setOpen(false);
   };
 
-  function handleListKeyDown(event) {
+  const handleListKeyDown = (event) => {
     if (event.key === "Tab") {
       event.preventDefault();
       setOpen(false);
     }
-  }
-
-  const prevOpen = React.useRef(open);
-  React.useEffect(() => {
-    if (prevOpen.current === true && open === false) {
-      anchorRef.current.focus();
-    }
-
-    prevOpen.current = open;
-  }, [open]);
+  };
 
   return (
     <div className={classes.root}>
-      <div>
-        <Button
-          ref={anchorRef}
-          aria-controls={open ? "menu-list-grow" : undefined}
-          aria-haspopup="true"
-          onClick={handleToggle}
-        >
-          {user.unreadNotification > 0 ? (
-            <>
-              <Badge badgeContent={"!"} overlap="rectangle" color="secondary">
-                <MenuIcon />
-              </Badge>
-            </>
-          ) : (
-            <>
-              <MenuIcon />
-            </>
-          )}
-        </Button>
-        <Popper
-          open={open}
-          anchorEl={anchorRef.current}
-          role={undefined}
-          transition
-          disablePortal
-        >
-          {({ TransitionProps, placement }) => (
-            <Grow
-              {...TransitionProps}
-              style={{
-                transformOrigin:
-                  placement === "bottom" ? "center top" : "center bottom",
-              }}
-            >
-              <Paper>
-                <ClickAwayListener onClickAway={handleClose}>
-                  <MenuList
-                    autoFocusItem={open}
-                    id="menu-list-grow"
-                    onKeyDown={handleListKeyDown}
-                  >
-                    <MenuItem className={classes.searchBar}>
-                      <SearchBar />
-                    </MenuItem>
-                    <Link color="inherit" href={`/${user.username}`}>
-                      <MenuItem className={classes.profile}>
-                        <PersonIcon color="primary" />
-                        Profile
-                      </MenuItem>
-                    </Link>
-                    <Link href="/messages" color="inherit">
-                      <MenuItem onClick={handleClose}>
-                        {/* {user.unreadMessage > 0 ? (
-                          <>
-                            <MailIcon color="secondary" /> Messages
-                          </>
-                        ) : (
-                          <> */}
-                        <MailIcon color="primary" /> Messages
-                        {/* </>
-                        )} */}
-                      </MenuItem>{" "}
-                    </Link>
+      <IconButton
+        ref={anchorRef}
+        className={classes.menuButton}
+        color="inherit"
+        aria-controls={open ? "nav-menu-list" : undefined}
+        aria-haspopup="true"
+        onClick={handleToggle}
+        aria-label="Open menu"
+      >
+        <MenuIcon />
+      </IconButton>
+      {user.unreadNotification ? <span className={classes.unreadDot} /> : null}
 
-                    <Link href="/notifications" color="inherit">
-                      <MenuItem onClick={handleClose}>
-                        {user.unreadNotification > 0 ? (
-                          <>
-                            <Badge
-                              badgeContent={"!"}
-                              overlap="rectangle"
-                              color="secondary"
-                            >
-                              <NotificationsIcon color="secondary" />
-                              Notifications
-                            </Badge>
-                          </>
-                        ) : (
-                          <>
-                            <NotificationsIcon color="primary" />
-                            Notifications
-                          </>
-                        )}
-                      </MenuItem>
-                    </Link>
-                    <MenuItem onClick={() => logoutUser(email)}>
-                      <ExitToAppIcon color="secondary" />
-                      Logout
+      <Popper
+        open={open}
+        anchorEl={anchorRef.current}
+        placement="bottom-end"
+        transition
+        className={classes.popper}
+        modifiers={{
+          offset: { offset: "0, 8" },
+          preventOverflow: { enabled: true, boundariesElement: "viewport" },
+        }}
+      >
+        {({ TransitionProps, placement }) => (
+          <Grow
+            {...TransitionProps}
+            style={{
+              transformOrigin:
+                placement === "bottom-end" ? "right top" : "right bottom",
+            }}
+          >
+            <Paper className={classes.paper} elevation={8}>
+              <ClickAwayListener onClickAway={handleClose}>
+                <MenuList
+                  autoFocusItem={open}
+                  id="nav-menu-list"
+                  className={classes.menuList}
+                  onKeyDown={handleListKeyDown}
+                >
+                  <MenuItem className={`${classes.menuItem} ${classes.searchBar}`}>
+                    <SearchBar />
+                  </MenuItem>
+                  <Link href={getProfilePath(user)} color="inherit">
+                    <MenuItem
+                      className={`${classes.menuItem} ${classes.profile}`}
+                      onClick={handleClose}
+                    >
+                      <PersonIcon className={classes.menuIcon} color="primary" />
+                      <span className={classes.menuItemLabel}>Profile</span>
                     </MenuItem>
-                  </MenuList>
-                </ClickAwayListener>
-              </Paper>
-            </Grow>
-          )}
-        </Popper>
-      </div>
+                  </Link>
+                  <Link href="/messages" color="inherit">
+                    <MenuItem className={classes.menuItem} onClick={handleClose}>
+                      <MailIcon className={classes.menuIcon} color="primary" />
+                      <span className={classes.menuItemLabel}>Messages</span>
+                    </MenuItem>
+                  </Link>
+                  <Link href="/notifications" color="inherit">
+                    <MenuItem className={classes.menuItem} onClick={handleClose}>
+                      <NotificationsIcon
+                        className={classes.menuIcon}
+                        color="primary"
+                      />
+                      <span className={classes.menuItemLabel}>Notifications</span>
+                      {user.unreadNotification ? (
+                        <span className={classes.notifPill}>!</span>
+                      ) : null}
+                    </MenuItem>
+                  </Link>
+                  <MenuItem
+                    className={classes.menuItem}
+                    onClick={() => {
+                      handleClose({ target: document.body });
+                      logoutUser(user.email);
+                    }}
+                  >
+                    <ExitToAppIcon className={classes.menuIcon} color="secondary" />
+                    <span className={classes.menuItemLabel}>Logout</span>
+                  </MenuItem>
+                </MenuList>
+              </ClickAwayListener>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useRef, useState } from "react";
-
 import {
   Avatar,
   Box,
@@ -11,179 +10,228 @@ import {
   TextField,
 } from "@material-ui/core";
 import PhotoLibraryIcon from "@material-ui/icons/PhotoLibrary";
-import LocationOnIcon from "@material-ui/icons/LocationOn";
-import PersonPinIcon from "@material-ui/icons/PersonPin";
-import ImageIcon from "@material-ui/icons/Image";
 import uploadPic from "../../utils/uploadPicToCloudinary";
 import { submitNewPost } from "../../utils/postActions";
 import Alert from "@material-ui/lab/Alert";
 import CircularProgress from "@material-ui/core/CircularProgress";
-const useStyles = makeStyles({
-  root: {
-    backgroundColor: "",
 
-    textAlign: "center",
+const useStyles = makeStyles((theme) => ({
+  card: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "visible",
   },
-  inputField: {
-    height: "auto",
-    margin: 5,
-    width: "50%",
-    ["&,fieldset"]: {
-      borderRadius: 25,
+  content: {
+    padding: theme.spacing(2, 2.5, 2.5),
+    "&:last-child": {
+      paddingBottom: theme.spacing(2.5),
     },
   },
-});
+  composer: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: theme.spacing(1.5),
+    marginBottom: theme.spacing(1.5),
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    marginTop: 4,
+  },
+  input: {
+    flex: 1,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      backgroundColor: theme.palette.grey[50],
+    },
+    "& .MuiInputLabel-outlined": {
+      transform: "translate(14px, 14px) scale(1)",
+    },
+    "& .MuiInputLabel-outlined.MuiInputLabel-shrink": {
+      transform: "translate(14px, -6px) scale(0.75)",
+    },
+  },
+  actions: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.spacing(1),
+    paddingLeft: 56,
+    marginBottom: theme.spacing(1),
+  },
+  mediaChip: {
+    marginLeft: 56,
+    marginBottom: theme.spacing(1),
+  },
+  error: {
+    marginLeft: 56,
+    marginBottom: theme.spacing(1),
+    borderRadius: 10,
+  },
+  footer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: theme.spacing(1.5),
+    paddingLeft: 56,
+    paddingTop: theme.spacing(0.5),
+  },
+  postBtn: {
+    minWidth: 96,
+    borderRadius: 10,
+  },
+}));
 
 function CardPost({ user, setPosts }) {
   const classes = useStyles();
-  const [createPost, setCreatePost] = useState({
-    text: "",
-    taggedUser: "",
-  });
+  const [text, setText] = useState("");
+  const [taggedUser, setTaggedUser] = useState("");
   const inputRef = useRef();
-  const { text, taggedUser } = createPost;
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState(null);
   const [mediaName, setMediaName] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-
-    if (name === "media") {
-      setMedia(files[0]);
-      setMediaName(files[0].name);
-    }
-    setCreatePost((prev) => ({ ...prev, [name]: value }));
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    if (error) setError(null);
   };
-  console.log(createPost.text);
+
+  const handleMediaChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMedia(file);
+    setMediaName(file.name);
+    if (error) setError(null);
+  };
 
   const cancelImg = () => {
-    setMediaName("");
+    setMediaName(null);
     setMedia(null);
-    setMediaPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
-    try {
-      e.preventDefault();
-      setLoading(true);
-      let picUrl;
+    e.preventDefault();
+    const trimmed = text.trim();
 
-      if (media !== null) {
+    if (trimmed.length < 1 && !media) {
+      setError("Add some text or attach an image to post.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      let picUrl;
+      if (media) {
         picUrl = await uploadPic(media);
         if (!picUrl) {
+          setError("Error uploading image. Check Cloudinary settings.");
           setLoading(false);
-          return setError("Error Uploading Image");
+          return;
         }
       }
+
       await submitNewPost(
-        createPost.text,
-        createPost.taggedUser,
+        trimmed,
+        taggedUser,
         picUrl,
         setPosts,
-        setCreatePost,
+        () => {
+          setText("");
+          setTaggedUser("");
+        },
         setError
       );
+
       setMedia(null);
       setMediaName(null);
-    } catch (error) {
-      setMediaName(null);
+      if (inputRef.current) inputRef.current.value = "";
+    } catch (err) {
+      setError("Could not create post. Try again.");
     }
 
     setLoading(false);
   };
 
   return (
-    <Card>
-      <CardContent className={classes.root}>
+    <Card className={classes.card} elevation={1}>
+      <CardContent className={classes.content}>
         <form onSubmit={handleSubmit} noValidate autoComplete="off">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span>
-              <Avatar alt={user.name} src={user.profilePicUrl} />
-            </span>
-
+          <Box className={classes.composer}>
+            <Avatar
+              alt={user.name}
+              src={user.profilePicUrl}
+              className={classes.avatar}
+            />
             <TextField
-              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
               name="text"
               value={text}
-              onChange={handleChange}
-              className={classes.inputField}
-              id="input-with-icon-grid"
+              onChange={handleTextChange}
+              className={classes.input}
               variant="outlined"
-              label="What's Happening?"
+              label="What's happening?"
+              placeholder="Share something with your network..."
             />
-          </div>
-          <Box
-            component="div"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          </Box>
+
+          <Box className={classes.actions}>
             <input
               ref={inputRef}
-              onChange={handleChange}
+              onChange={handleMediaChange}
               name="media"
               style={{ display: "none" }}
               type="file"
               accept="image/*"
               id="raised-button-file"
             />
-
             <label htmlFor="raised-button-file">
-              <Button component="span" className={classes.button}>
-                <PhotoLibraryIcon />
+              <Button
+                component="span"
+                size="small"
+                startIcon={<PhotoLibraryIcon />}
+                color="primary"
+              >
+                Photo
               </Button>
             </label>
-            {/* <Button>
-              <LocationOnIcon />
-            </Button>
-            <Button>
-              <PersonPinIcon />
-            </Button> */}
           </Box>
-          {mediaName ? (
-            <>
-              <Chip
-                variant="outlined"
-                size="small"
-                avatar={<ImageIcon color="primary" />}
-                label={mediaName}
-                onDelete={cancelImg}
-              />
-              <br />
-            </>
-          ) : (
-            <></>
+
+          {mediaName && (
+            <Chip
+              className={classes.mediaChip}
+              variant="outlined"
+              size="small"
+              color="primary"
+              label={mediaName}
+              onDelete={cancelImg}
+            />
           )}
-          {error ? (
-            <Alert variant="outlined" severity="error">
+
+          {error && (
+            <Alert severity="error" className={classes.error}>
               {error}
             </Alert>
-          ) : (
-            <></>
           )}
 
-          <Button
-            type="submit"
-            color="primary"
-            variant="contained"
-            style={{ marginTop: 5 }}
-          >
-            Post
-          </Button>
-          <br />
-
-          {loading && <CircularProgress />}
+          <Box className={classes.footer}>
+            {loading && <CircularProgress size={22} />}
+            <Button
+              type="submit"
+              color="primary"
+              variant="contained"
+              className={classes.postBtn}
+              disabled={loading}
+            >
+              Post
+            </Button>
+          </Box>
         </form>
       </CardContent>
     </Card>

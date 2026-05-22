@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -8,560 +8,490 @@ import {
   IconButton,
   Link,
   CircularProgress,
+  Paper,
+  Typography,
+  Tabs,
+  Tab,
+  Divider,
 } from "@material-ui/core";
-import ReactCardFlip from "react-card-flip";
 import Head from "next/head";
+import { ThemeProvider } from "@material-ui/core/styles";
 import Visibility from "@material-ui/icons/Visibility";
 import VisibilityOff from "@material-ui/icons/VisibilityOff";
 import PersonIcon from "@material-ui/icons/Person";
 import AccountCircleIcon from "@material-ui/icons/AccountCircle";
-import baseUrl from "../utils/baseUrl";
-import CssTextField from "../components/Layout/CssTextField";
 import LockIcon from "@material-ui/icons/Lock";
 import CheckIcon from "@material-ui/icons/Check";
 import ClearIcon from "@material-ui/icons/Clear";
 import MailOutlineIcon from "@material-ui/icons/MailOutline";
-import { loginUser, registerAccount } from "../utils/authUser";
 import Alert from "@material-ui/lab/Alert";
-import { createMuiTheme, ThemeProvider } from "@material-ui/core/styles";
-const regexUserName = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/;
-import { green } from "@material-ui/core/colors";
+import baseUrl from "../utils/baseUrl";
+import CssTextField from "../components/Layout/CssTextField";
+import { loginUser, registerAccount } from "../utils/authUser";
+import theme from "../src/theme";
+import {
+  USERNAME_REGEX,
+  isValidEmail,
+  isValidPassword,
+} from "../utils/validation";
+
+export const DEMO_LOGIN_EMAIL = "johndoe@gmail.com";
+export const DEMO_LOGIN_PASSWORD = "test123";
 
 const useStyles = makeStyles((theme) => ({
-  root: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 0,
-    margin: 0,
+  page: {
     minHeight: "100vh",
-    backgroundImage: `url(${"/img/bg.jpg"})`,
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "cover",
-    backgroundPosition: "center center",
-  },
-
-  buttonSwitch: {
-    backgroundColor: "#000",
-    marginBottom: 20,
-    "&, Button": {
-      borderRadius: "50px",
-    },
-  },
-
-  title: {
-    textAlign: "center",
-    paddingBottom: 20,
-    margin: 0,
-  },
-
-  formDiv: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: theme.spacing(3),
+    background:
+      "linear-gradient(135deg, #0f172a 0%, #312e81 40%, #4f46e5 70%, #6366f1 100%)",
     position: "relative",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: "5px",
-    boxShadow: "3px 3px 10px #000",
-    width: "340px",
-    margin: 30,
-    padding: 30,
-    [theme.breakpoints.down("sm")]: {
-      width: "auto",
-      margin: "auto",
+    overflow: "hidden",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      width: 480,
+      height: 480,
+      borderRadius: "50%",
+      background: "rgba(236, 72, 153, 0.15)",
+      top: -120,
+      right: -80,
+      filter: "blur(2px)",
+    },
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      width: 360,
+      height: 360,
+      borderRadius: "50%",
+      background: "rgba(129, 140, 248, 0.2)",
+      bottom: -100,
+      left: -60,
     },
   },
-  backFormDiv: {
+  card: {
     position: "relative",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: "5px",
-    boxShadow: "3px 3px 10px #000",
-    width: "340px",
-
-    margin: 10,
-    padding: 10,
-    [theme.breakpoints.down("sm")]: {
-      width: "auto",
-      margin: "auto",
-    },
+    zIndex: 1,
+    width: "100%",
+    maxWidth: 440,
+    padding: theme.spacing(4, 3, 3),
+    borderRadius: 20,
+    background: "rgba(255, 255, 255, 0.12)",
+    backdropFilter: "blur(18px)",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    boxShadow: "0 24px 48px rgba(15, 23, 42, 0.35)",
   },
-
-  helperAccount: {
+  brand: {
     textAlign: "center",
+    marginBottom: theme.spacing(2),
   },
-
-  btnStyle: {
+  brandTitle: {
+    color: "#fff",
+    fontWeight: 700,
+    letterSpacing: "-0.03em",
+  },
+  brandSubtitle: {
+    color: "rgba(255, 255, 255, 0.75)",
+    marginTop: 4,
+  },
+  demoHint: {
+    marginBottom: theme.spacing(2),
+    backgroundColor: "rgba(99, 102, 241, 0.25)",
+    color: "#e0e7ff",
+    border: "1px solid rgba(255, 255, 255, 0.15)",
+    "& .MuiAlert-icon": {
+      color: "#c7d2fe",
+    },
+  },
+  tabs: {
+    marginBottom: theme.spacing(2),
+    "& .MuiTab-root": {
+      color: "rgba(255, 255, 255, 0.65)",
+      fontWeight: 600,
+      minWidth: 120,
+    },
+    "& .Mui-selected": {
+      color: "#fff",
+    },
+    "& .MuiTabs-indicator": {
+      backgroundColor: "#fff",
+      height: 3,
+      borderRadius: 3,
+    },
+  },
+  fieldRow: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  submitBtn: {
+    marginTop: theme.spacing(2),
+    padding: "12px 0",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+    color: "#fff",
+    boxShadow: "0 8px 24px rgba(99, 102, 241, 0.45)",
+    "&:hover": {
+      background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+    },
+  },
+  switchLink: {
+    display: "block",
     textAlign: "center",
-    padding: 20,
-  },
-  sendBtn: {
-    color: "#FFF",
-    width: "100px",
-    fontWeight: "bold",
-  },
-  frontCard: {
-    backgroundColor: "green",
-    height: 100,
-    color: "#fff",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  backCard: {
-    backgroundColor: "red",
-    height: 100,
-    color: "#fff",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  cssLabel: {
-    position: "relative",
-    color: "#fff",
-    fontColor: "#fff",
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    minWidth: "300px",
-    [theme.breakpoints.down("sm", "md")]: {
-      minWidth: "19vw",
+    marginTop: theme.spacing(2),
+    color: "#c7d2fe",
+    cursor: "pointer",
+    fontWeight: 500,
+    "&:hover": {
+      color: "#fff",
+      textDecoration: "underline",
     },
   },
-
-  cssOutlinedInput: {
-    "&$cssFocused $notchedOutline": {
-      borderColor: `${theme.palette.secondary.main} !important`,
-    },
+  loadingRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    color: "#fff",
+    marginTop: theme.spacing(1),
   },
-
-  cssFocused: {},
-  notchedOutline: {},
 }));
 
-const themeGreen = createMuiTheme({
-  palette: {
-    primary: green,
-  },
-});
-
-function login() {
+function LoginPage() {
   const classes = useStyles();
+  const [tab, setTab] = useState(0);
   const [user, setUser] = useState({
-    email: "test@test.com",
-    password: "test123",
+    email: DEMO_LOGIN_EMAIL,
+    password: DEMO_LOGIN_PASSWORD,
   });
   const [registerUser, setRegisterUser] = useState({
     mail: "",
     name: "",
     pass: "",
+    username: "",
   });
-  const { email, password } = user;
-  const { mail, name, pass } = registerUser;
-
-  const [isFlipped, setIsFlipped] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [username, setUsername] = useState("");
-  const [usernameLoading, setUsernameLoading] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(false);
-  let cancel;
-
-  const handleClick = () => {
-    setIsFlipped(!isFlipped);
-  };
-
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleMouseDownPassword = (event) => {
-    event.preventDefault();
-  };
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  const cancelRef = useRef(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setUser((prev) => ({ ...prev, [name]: value }));
+    if (errorMsg) setErrorMsg(null);
   };
 
   const handleChangeRegister = (e) => {
     const { name, value } = e.target;
-
     setRegisterUser((prev) => ({ ...prev, [name]: value }));
+    if (name === "username") setUsername(value);
+    if (errorMsg) setErrorMsg(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    if (!isValidEmail(user.email)) {
+      setErrorMsg("Enter a valid email address");
+      return;
+    }
+    if (!isValidPassword(user.password)) {
+      setErrorMsg("Password must be at least 6 characters");
+      return;
+    }
     await loginUser(user, setErrorMsg, setFormLoading);
   };
+
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-
-    await registerAccount(registerUser, setErrorMsg, setFormLoading);
-  };
-  const checkUsername = async () => {
-    setUsernameLoading(true);
-    try {
-      cancel && cancel();
-
-      const CancelToken = axios.CancelToken;
-
-      const res = await axios.get(`${baseUrl}/api/signup/${username}`, {
-        cancelToken: new CancelToken((canceler) => {
-          cancel = canceler;
-        }),
-      });
-
-      if (errorMsg !== null) setErrorMsg(null);
-
-      if (res.data === "Available") {
-        setUsernameAvailable(true);
-        setRegisterUser((prev) => ({ ...prev, username }));
-      }
-    } catch (error) {
-      setErrorMsg("Username Not Available");
-      setUsernameAvailable(false);
+    if (!isValidEmail(registerUser.mail)) {
+      setErrorMsg("Enter a valid email address");
+      return;
     }
-    setUsernameLoading(false);
+    if (!registerUser.name.trim() || registerUser.name.trim().length < 2) {
+      setErrorMsg("Name must be at least 2 characters");
+      return;
+    }
+    if (!isValidUsername(username)) {
+      setErrorMsg("Choose a valid username (letters, numbers, underscores, dots)");
+      return;
+    }
+    if (usernameStatus !== "available") {
+      setErrorMsg("Username is not available");
+      return;
+    }
+    if (!isValidPassword(registerUser.pass)) {
+      setErrorMsg("Password must be at least 6 characters");
+      return;
+    }
+    await registerAccount(
+      { ...registerUser, username },
+      setErrorMsg,
+      setFormLoading
+    );
   };
 
   useEffect(() => {
-    username === "" ? setUsernameAvailable(false) : checkUsername();
+    if (!username) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    if (!USERNAME_REGEX.test(username)) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        cancelRef.current?.();
+        const CancelToken = axios.CancelToken;
+        const res = await axios.get(`${baseUrl}/api/signup/${username}`, {
+          cancelToken: new CancelToken((c) => {
+            cancelRef.current = c;
+          }),
+        });
+        if (res.data?.message === "Available") {
+          setUsernameStatus("available");
+          setRegisterUser((prev) => ({ ...prev, username }));
+        } else {
+          setUsernameStatus("taken");
+        }
+      } catch {
+        setUsernameStatus("taken");
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, [username]);
 
+  const renderUsernameIcon = () => {
+    if (!username) return null;
+    if (usernameStatus === "available") {
+      return <CheckIcon style={{ color: "#4ade80" }} />;
+    }
+    return <ClearIcon style={{ color: "#f87171" }} />;
+  };
+
   return (
-    <>
-      {" "}
+    <ThemeProvider theme={theme}>
       <Head>
-        <title>Social Media</title>
+        <title>Sign in · SayHi</title>
       </Head>
-      <Box className={classes.root}>
-        <ReactCardFlip isFlipped={isFlipped} flipDirection="horizontal">
-          <Box component="div" className={classes.formDiv}>
-            <form
-              onSubmit={handleSubmit}
-              noValidate
-              autoComplete="off"
-              className={classes.formField}
-            >
-              <Box component="div" className={classes.title}>
-                <h2>Welcome Back</h2>
-                <span>Login to your Account</span>
-              </Box>
+      <Box className={classes.page}>
+        <Paper className={classes.card} elevation={0}>
+          <Box className={classes.brand}>
+            <Typography variant="h4" className={classes.brandTitle}>
+              SayHi
+            </Typography>
+            <Typography variant="body2" className={classes.brandSubtitle}>
+              Connect, share, and chat
+            </Typography>
+          </Box>
 
-              <div>
-                <CssTextField
-                  label="Email"
-                  type="email"
-                  name="email"
-                  // value={email}
-                  value="test@test.com"
-                  // onChange={handleChange}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <MailOutlineIcon />
-                      </InputAdornment>
-                    ),
-                    classes: {
-                      root: classes.cssLabel,
-                    },
-                  }}
-                />
-              </div>
+          <Alert severity="info" className={classes.demoHint} icon={false}>
+            Demo login pre-filled — you can edit email and password anytime.
+          </Alert>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
+          <Tabs
+            value={tab}
+            onChange={(_, value) => {
+              setTab(value);
+              setErrorMsg(null);
+            }}
+            centered
+            className={classes.tabs}
+          >
+            <Tab label="Sign in" />
+            <Tab label="Sign up" />
+          </Tabs>
+
+          {errorMsg && (
+            <Alert severity="error" style={{ marginBottom: 16 }}>
+              {errorMsg}
+            </Alert>
+          )}
+
+          {tab === 0 ? (
+            <form onSubmit={handleSubmit} noValidate autoComplete="off">
+              <CssTextField
+                label="Email"
+                type="email"
+                name="email"
+                value={user.email}
+                onChange={handleChange}
+                autoComplete="email"
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MailOutlineIcon />
+                    </InputAdornment>
+                  ),
                 }}
-              >
+              />
+              <Box className={classes.fieldRow}>
                 <CssTextField
                   label="Password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  // value={password}
-                  value="test123"
-                  // onChange={handleChange}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
+                  value={user.password}
+                  onChange={handleChange}
+                  autoComplete="current-password"
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
                         <LockIcon />
                       </InputAdornment>
                     ),
-
-                    classes: {
-                      root: classes.cssLabel,
-                    },
                   }}
                 />
-                {user.password ? (
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                    >
-                      {showPassword ? <Visibility /> : <VisibilityOff />}
-                    </IconButton>
-                  </span>
-                ) : (
-                  <></>
-                )}
-              </div>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{ color: "rgba(255,255,255,0.8)", marginBottom: 8 }}
+                >
+                  {showPassword ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
+              </Box>
+
               {formLoading ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                  }}
-                >
-                  Logging in.....
-                  <CircularProgress />
-                </div>
+                <Box className={classes.loadingRow}>
+                  <Typography variant="body2">Signing in…</Typography>
+                  <CircularProgress size={22} style={{ color: "#fff" }} />
+                </Box>
               ) : (
-                <></>
-              )}
-
-              <div className={classes.btnStyle}>
                 <Button
-                  className={classes.sendBtn}
+                  fullWidth
                   variant="contained"
-                  color="primary"
                   type="submit"
+                  className={classes.submitBtn}
+                  disabled={formLoading}
                 >
-                  LOGIN
+                  Sign in
                 </Button>
-              </div>
-
-              <Box component="div" className={classes.helperAccount}>
-                <Link
-                  onClick={handleClick}
-                  style={{ color: "#008DFF", cursor: "pointer" }}
-                >
-                  Create an Account?
-                </Link>
-              </Box>
+              )}
             </form>
-          </Box>
-
-          {/* Signup */}
-
-          <Box component="div" className={classes.backFormDiv}>
-            <form
-              onSubmit={handleRegisterSubmit}
-              noValidate
-              autoComplete="off"
-              className={classes.formField}
-            >
-              <Box component="div" className={classes.title}>
-                <h2>Register</h2>
-                <span>Create your new Account</span>
-              </Box>
-
-              <div>
-                <CssTextField
-                  label="Email"
-                  type="email"
-                  name="mail"
-                  value={mail}
-                  onChange={handleChangeRegister}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <MailOutlineIcon />
-                      </InputAdornment>
-                    ),
-                    classes: {
-                      root: classes.cssLabel,
-                    },
-                  }}
-                />
-              </div>
-              <div>
-                <CssTextField
-                  label="Name"
-                  type="text"
-                  name="name"
-                  value={name}
-                  onChange={handleChangeRegister}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon />
-                      </InputAdornment>
-                    ),
-                    classes: {
-                      root: classes.cssLabel,
-                    },
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
+          ) : (
+            <form onSubmit={handleRegisterSubmit} noValidate autoComplete="off">
+              <CssTextField
+                label="Email"
+                type="email"
+                name="mail"
+                value={registerUser.mail}
+                onChange={handleChangeRegister}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MailOutlineIcon />
+                    </InputAdornment>
+                  ),
                 }}
-              >
+              />
+              <CssTextField
+                label="Full name"
+                type="text"
+                name="name"
+                value={registerUser.name}
+                onChange={handleChangeRegister}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Box className={classes.fieldRow}>
                 <CssTextField
-                  label="Usename"
+                  label="Username"
                   type="text"
                   name="username"
                   value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (regexUserName.test(e.target.value)) {
-                      setUsernameAvailable(true);
-                    } else {
-                      setUsernameAvailable(false);
-                    }
-                  }}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
+                  onChange={handleChangeRegister}
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
                         <AccountCircleIcon />
                       </InputAdornment>
                     ),
-
-                    classes: {
-                      root: classes.cssLabel,
-                    },
                   }}
                 />
-                {username ? (
-                  <span>
-                    <IconButton size="small" style={{ cursor: "default" }}>
-                      {usernameAvailable ? (
-                        <ThemeProvider theme={themeGreen}>
-                          <CheckIcon />
-                        </ThemeProvider>
-                      ) : (
-                        <ClearIcon color="secondary" />
-                      )}
-                    </IconButton>
-                  </span>
-                ) : (
-                  <></>
-                )}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                }}
-              >
+                <IconButton size="small" style={{ marginBottom: 8 }}>
+                  {renderUsernameIcon()}
+                </IconButton>
+              </Box>
+              <Box className={classes.fieldRow}>
                 <CssTextField
                   label="Password"
                   name="pass"
                   type={showPassword ? "text" : "password"}
-                  value={pass}
+                  value={registerUser.pass}
                   onChange={handleChangeRegister}
-                  InputLabelProps={{
-                    classes: {
-                      root: classes.cssLabel,
-                      focused: classes.cssFocused,
-                    },
-                    shrink: true,
-                  }}
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
                         <LockIcon />
                       </InputAdornment>
                     ),
-
-                    classes: {
-                      root: classes.cssLabel,
-                    },
                   }}
                 />
-                {registerUser.pass ? (
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                    >
-                      {showPassword ? <Visibility /> : <VisibilityOff />}
-                    </IconButton>
-                  </span>
-                ) : (
-                  <></>
-                )}
-              </div>
-              {errorMsg ? (
-                <Alert variant="outlined" severity="error">
-                  {errorMsg}
-                </Alert>
-              ) : (
-                ""
-              )}
-              <div className={classes.btnStyle}>
-                <Button
-                  className={classes.sendBtn}
-                  variant="contained"
-                  color="primary"
-                  type="submit"
+                <IconButton
+                  size="small"
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{ color: "rgba(255,255,255,0.8)", marginBottom: 8 }}
                 >
-                  Sign Up
-                </Button>
-              </div>
-
-              <Box component="div" className={classes.helperAccount}>
-                <Link
-                  onClick={handleClick}
-                  style={{ color: "#008DFF", cursor: "pointer" }}
-                >
-                  Already have an account?
-                </Link>
+                  {showPassword ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
               </Box>
+
+              {formLoading ? (
+                <Box className={classes.loadingRow}>
+                  <Typography variant="body2">Creating account…</Typography>
+                  <CircularProgress size={22} style={{ color: "#fff" }} />
+                </Box>
+              ) : (
+                <Button
+                  fullWidth
+                  variant="contained"
+                  type="submit"
+                  className={classes.submitBtn}
+                  disabled={formLoading || usernameStatus === "taken"}
+                >
+                  Create account
+                </Button>
+              )}
             </form>
-          </Box>
-        </ReactCardFlip>
+          )}
+
+          <Divider style={{ margin: "20px 0", background: "rgba(255,255,255,0.15)" }} />
+
+          <Link
+            component="button"
+            type="button"
+            className={classes.switchLink}
+            onClick={() => {
+              setTab(tab === 0 ? 1 : 0);
+              setErrorMsg(null);
+            }}
+          >
+            {tab === 0
+              ? "New here? Create an account"
+              : "Already have an account? Sign in"}
+          </Link>
+        </Paper>
       </Box>
-    </>
+    </ThemeProvider>
   );
 }
 
-export default login;
+export default LoginPage;

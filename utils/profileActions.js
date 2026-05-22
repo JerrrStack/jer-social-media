@@ -37,13 +37,17 @@ export const unfollowUser = async (userToUnfollowId, setCurrentUser) => {
   }
 };
 
-export const updateProfile = async (text, profilePicUrl, setError) => {
-  const { bio, website } = text;
+export const updateProfile = async (fields, setError, onSuccess) => {
   try {
-    await Axios.post(`/update`, { bio, profilePicUrl, website });
-    Router.reload();
+    const res = await Axios.post(`/update`, fields);
+    if (onSuccess) {
+      onSuccess(res.data);
+    } else {
+      Router.reload();
+    }
   } catch (error) {
-    alert(catchErrors(error));
-    setError(catchErrors(error));
+    const msg = catchErrors(error);
+    if (setError) setError(msg);
+    else alert(msg);
   }
 };

@@ -18,8 +18,8 @@ import FavoriteIcon from "@material-ui/icons/Favorite";
 import { likePost } from "../../utils/postActions";
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import Comments from "./Comments";
+import CommentThread from "./CommentThread";
 import checkTime from "../../utils/checkTime";
-import DeleteCommentPopup from "../Post/DeleteCommentPopup";
 const useStyles = makeStyles((theme) => ({
   paper: {
     position: "absolute",
@@ -107,6 +107,8 @@ export default function PostModal({
   comments,
   setComments,
   setShowModal,
+  userFollowStats,
+  onFollowStatsChange,
 }) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -196,57 +198,16 @@ export default function PostModal({
           <Card className={classes.commentSection}>
             <Typography>Comments</Typography>
             <Divider />
-            {comments.length > 0 &&
-              comments.map((comment) => (
-                <Card key={comment._id}>
-                  <CardHeader
-                    avatar={
-                      <Avatar
-                        alt="Profile Pic"
-                        src={comment.user.profilePicUrl}
-                      />
-                    }
-                    action={
-                      user._id === comment.user._id ? (
-                        <>
-                          <Button
-                            aria-controls="simple-menu"
-                            aria-haspopup="true"
-                            onClick={handleClick}
-                          >
-                            <MoreVertIcon />
-                          </Button>
-                          <Menu
-                            id="fade-menu"
-                            anchorEl={anchorEl}
-                            keepMounted
-                            open={opensetting}
-                            onClose={handleClose}
-                          >
-                            <MenuItem
-                              onClick={handleClose}
-                              style={{
-                                backgroundColor: "transparent",
-                                cursor: "default",
-                              }}
-                            >
-                              <DeleteCommentPopup
-                                post={post}
-                                setComments={setComments}
-                                comment={comment}
-                              />
-                            </MenuItem>
-                          </Menu>
-                        </>
-                      ) : (
-                        <></>
-                      )
-                    }
-                    title={comment.user.name}
-                    subheader={comment.text}
-                  />
-                </Card>
-              ))}
+            {comments.length > 0 && (
+              <CommentThread
+                comments={comments}
+                user={user}
+                post={post}
+                setComments={setComments}
+                userFollowStats={userFollowStats}
+                onFollowStatsChange={onFollowStatsChange}
+              />
+            )}
           </Card>
           <Comments user={user} post={post} setComments={setComments} />
         </Grid>
@@ -310,57 +271,16 @@ export default function PostModal({
           </Button>
         </Card>
         <Card className={classes.NoPostPicComment}>
-          {comments.length > 0 &&
-            comments.map((comment) => (
-              <Card key={comment._id}>
-                <CardHeader
-                  avatar={
-                    <Avatar
-                      alt="Profile Pic"
-                      src={comment.user.profilePicUrl}
-                    />
-                  }
-                  action={
-                    user._id === comment.user._id ? (
-                      <>
-                        <Button
-                          aria-controls="simple-menu"
-                          aria-haspopup="true"
-                          onClick={handleClick}
-                        >
-                          <MoreVertIcon />
-                        </Button>
-                        <Menu
-                          id="fade-menu"
-                          anchorEl={anchorEl}
-                          keepMounted
-                          open={opensetting}
-                          onClose={handleClose}
-                        >
-                          <MenuItem
-                            onClick={handleClose}
-                            style={{
-                              backgroundColor: "transparent",
-                              cursor: "default",
-                            }}
-                          >
-                            <DeleteCommentPopup
-                              post={post}
-                              setComments={setComments}
-                              comment={comment}
-                            />
-                          </MenuItem>
-                        </Menu>
-                      </>
-                    ) : (
-                      <></>
-                    )
-                  }
-                  title={comment.user.name}
-                  subheader={comment.text}
-                />
-              </Card>
-            ))}
+          {comments.length > 0 && (
+            <CommentThread
+              comments={comments}
+              user={user}
+              post={post}
+              setComments={setComments}
+              userFollowStats={userFollowStats}
+              onFollowStatsChange={onFollowStatsChange}
+            />
+          )}
         </Card>
 
         <Comments user={user} post={post} setComments={setComments} />

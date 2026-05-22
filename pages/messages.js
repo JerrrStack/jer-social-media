@@ -1,4 +1,4 @@
-import { Box, Grid, makeStyles, Paper } from "@material-ui/core";
+import { Box, List, makeStyles, Typography } from "@material-ui/core";
 import React, { useEffect, useState, useRef } from "react";
 import SearchChat from "../components/Messages/SearchChat";
 import axios from "axios";
@@ -13,31 +13,102 @@ import Messages from "../components/Messages/Messages";
 import UserInfo from "../components/Messages/UserInfo";
 import ChatInputField from "../components/Messages/ChatInputField";
 import getUserInfo from "../utils/getUserInfo";
-import CircularProgress from "@material-ui/core/CircularProgress";
-const useStyle = makeStyles({
-  root: {
-    minHeight: "80vh",
-    position: "relative",
-  },
 
+const useStyles = makeStyles((theme) => ({
+  shell: {
+    display: "flex",
+    width: "100%",
+    minHeight: "calc(100vh - 72px)",
+    maxHeight: "calc(100vh - 72px)",
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: theme.palette.background.paper,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+    border: `1px solid ${theme.palette.divider}`,
+    [theme.breakpoints.down("md")]: {
+      minHeight: "calc(100vh - 68px)",
+      maxHeight: "calc(100vh - 68px)",
+      borderRadius: 8,
+    },
+    [theme.breakpoints.down("xs")]: {
+      minHeight: "calc(100vh - 64px)",
+      maxHeight: "calc(100vh - 64px)",
+      borderRadius: 0,
+      border: "none",
+    },
+  },
+  sidebar: {
+    width: 300,
+    flexShrink: 0,
+    display: "flex",
+    flexDirection: "column",
+    borderRight: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+    [theme.breakpoints.down("sm")]: {
+      width: "100%",
+      maxWidth: "100%",
+      borderRight: "none",
+      display: (props) => (props.showChat ? "none" : "flex"),
+    },
+  },
+  sidebarSearch: {
+    padding: theme.spacing(1.5),
+    flexShrink: 0,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
   chatList: {
-    maxHeight: "76vh",
+    flex: 1,
+    overflowY: "auto",
+    overflowX: "hidden",
+    minHeight: 0,
   },
-  MessageContent: {
-    minHeight: "75vh",
-    maxHeight: "75vh",
-    overflow: "auto",
-    whiteSpace: "normal",
-    wordWrap: "break-word",
+  main: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+    minHeight: 0,
+    [theme.breakpoints.down("sm")]: {
+      display: (props) => (props.showChat ? "flex" : "none"),
+    },
   },
-});
-const scrollDivToBottom = (divRef) =>
-  divRef.current !== null &&
-  divRef.current.scrollIntoView({ behaviour: "smooth" });
+  messagesArea: {
+    flex: 1,
+    overflowY: "auto",
+    padding: theme.spacing(2),
+    backgroundColor: "#f8fafc",
+    minHeight: 0,
+  },
+  inputArea: {
+    flexShrink: 0,
+    padding: theme.spacing(1.5, 2),
+    borderTop: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+  },
+  emptyMain: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: theme.spacing(4),
+    backgroundColor: "#f8fafc",
+  },
+  emptyText: {
+    color: theme.palette.text.secondary,
+    textAlign: "center",
+  },
+}));
 
-function messages({ chatsData, user }) {
+const scrollDivToBottom = (divRef) => {
+  if (divRef?.current) {
+    divRef.current.scrollIntoView({ behavior: "smooth" });
+  }
+};
+
+function MessagesPage({ chatsData, user }) {
   const router = useRouter();
-  const classes = useStyle();
+  const showChat = Boolean(router.query.message);
+  const classes = useStyles({ showChat });
   const socket = useRef();
   const divRef = useRef();
   const [chats, setChats] = useState(chatsData);
@@ -47,70 +118,68 @@ function messages({ chatsData, user }) {
     name: "",
     profilePicUrl: "",
   });
-  const [loading, setLoading] = useState(false);
 
-  // Query string
   const openChatId = useRef("");
 
-  //CONNECTION useEffect
   useEffect(() => {
-    if (!socket.current) {
-      socket.current = io(baseUrl);
-    }
+    const s = io(baseUrl);
+    socket.current = s;
 
-    if (socket.current) {
-      socket.current.emit("join", { userId: user._id });
+    s.emit("join", { userId: user._id });
 
-      socket.current.on("connectedUsers", ({ users }) => {
-        users.length > 0 && setConnectedUsers(users);
-      });
-
-      if (chats.length > 0 && !router.query.message) {
-        router.push(`/messages?message=${chats[0].messagesWith}`, undefined, {
-          shallow: true,
-        });
-      }
-    }
+    const onConnectedUsers = ({ users }) => {
+      if (users?.length > 0) setConnectedUsers(users);
+    };
+    s.on("connectedUsers", onConnectedUsers);
 
     return () => {
-      if (socket.current) {
-        socket.current.emit("disconnect");
-        socket.current.off();
-      }
+      s.off("connectedUsers", onConnectedUsers);
+      s.disconnect();
+      socket.current = null;
     };
-  }, []);
+  }, [user._id]);
 
-  // LOAD MESSAGES useEffect
   useEffect(() => {
-    const loadMessages = () => {
-      socket.current.emit("loadMessages", {
-        userId: user._id,
-        messagesWith: router.query.message,
+    if (chats.length > 0 && !router.query.message) {
+      router.push(`/messages?message=${chats[0].messagesWith}`, undefined, {
+        shallow: true,
       });
+    }
+  }, [chats, router.query.message]);
 
-      socket.current.on("messagesLoaded", async ({ chat }) => {
-        setMessages(chat.messages);
-        setChatWithData({
-          name: chat.messagesWith.name,
-          profilePicUrl: chat.messagesWith.profilePicUrl,
-        });
+  useEffect(() => {
+    const s = socket.current;
+    if (!s || !router.query.message) return;
 
-        openChatId.current = chat.messagesWith._id;
-        divRef.current && scrollDivToBottom(divRef);
+    const onMessagesLoaded = ({ chat }) => {
+      setMessages(chat.messages);
+      setChatWithData({
+        name: chat.messagesWith.name,
+        profilePicUrl: chat.messagesWith.profilePicUrl,
       });
-
-      socket.current.on("noChatFound", async () => {
-        const { name, profilePicUrl } = await getUserInfo(router.query.message);
-
-        setChatWithData({ name, profilePicUrl });
-        setMessages([]);
-
-        openChatId.current = router.query.message;
-      });
+      openChatId.current = chat.messagesWith._id;
+      scrollDivToBottom(divRef);
     };
 
-    if (socket.current && router.query.message) loadMessages();
-  }, [router.query.message]);
+    const onNoChatFound = async () => {
+      const { name, profilePicUrl } = await getUserInfo(router.query.message);
+      setChatWithData({ name, profilePicUrl });
+      setMessages([]);
+      openChatId.current = router.query.message;
+    };
+
+    s.emit("loadMessages", {
+      userId: user._id,
+      messagesWith: router.query.message,
+    });
+    s.on("messagesLoaded", onMessagesLoaded);
+    s.on("noChatFound", onNoChatFound);
+
+    return () => {
+      s.off("messagesLoaded", onMessagesLoaded);
+      s.off("noChatFound", onNoChatFound);
+    };
+  }, [router.query.message, user._id]);
 
   const sendMsg = (msg) => {
     if (socket.current) {
@@ -122,106 +191,107 @@ function messages({ chatsData, user }) {
     }
   };
 
-  // Confirming msg is sent and receving the messages useEffect
   useEffect(() => {
-    if (socket.current) {
-      socket.current.on("msgSent", ({ newMsg }) => {
-        if (newMsg.receiver === openChatId.current) {
-          setMessages((prev) => [...prev, newMsg]);
+    const s = socket.current;
+    if (!s) return;
 
-          setChats((prev) => {
-            const previousChat = prev.find(
-              (chat) => chat.messagesWith === newMsg.receiver
-            );
+    const onMsgSent = ({ newMsg }) => {
+      if (newMsg.receiver === openChatId.current) {
+        setMessages((prev) => [...prev, newMsg]);
+        setChats((prev) => {
+          const previousChat = prev.find(
+            (chat) => chat.messagesWith === newMsg.receiver
+          );
+          if (previousChat) {
             previousChat.lastMessage = newMsg.msg;
             previousChat.date = newMsg.date;
+          }
+          return [...prev];
+        });
+      }
+    };
 
-            return [...prev];
-          });
+    const onNewMsgReceived = async ({ newMsg }) => {
+      if (newMsg.sender === openChatId.current) {
+        setMessages((prev) => [...prev, newMsg]);
+        setChats((prev) => {
+          const previousChat = prev.find(
+            (chat) => chat.messagesWith === newMsg.sender
+          );
+          if (previousChat) {
+            previousChat.lastMessage = newMsg.msg;
+            previousChat.date = newMsg.date;
+          }
+          return [...prev];
+        });
+        return;
+      }
+
+      let chatExists = false;
+      setChats((prev) => {
+        const existing = prev.find(
+          (chat) => chat.messagesWith === newMsg.sender
+        );
+        if (existing) {
+          chatExists = true;
+          existing.lastMessage = newMsg.msg;
+          existing.date = newMsg.date;
+          return [
+            existing,
+            ...prev.filter((chat) => chat.messagesWith !== newMsg.sender),
+          ];
         }
+        return prev;
       });
 
-      socket.current.on("newMsgReceived", async ({ newMsg }) => {
-        let senderName;
-
-        // WHEN CHAT WITH SENDER IS CURRENTLY OPENED INSIDE YOUR BROWSER
-        if (newMsg.sender === openChatId.current) {
-          setMessages((prev) => [...prev, newMsg]);
-
-          setChats((prev) => {
-            const previousChat = prev.find(
-              (chat) => chat.messagesWith === newMsg.sender
-            );
-            if (previousChat) {
-              previousChat.lastMessage = newMsg.msg;
-              previousChat.date = newMsg.date;
-
-              senderName = previousChat.name;
-            }
-
-            return [...prev];
-          });
-        }
-        //
-        else {
-          const ifPreviouslyMessaged =
-            chats.filter((chat) => chat.messagesWith === newMsg.sender).length >
-            0;
-
-          if (ifPreviouslyMessaged) {
-            setChats((prev) => {
-              const previousChat = prev.find(
-                (chat) => chat.messagesWith === newMsg.sender
-              );
-              previousChat.lastMessage = newMsg.msg;
-              previousChat.date = newMsg.date;
-
-              senderName = previousChat.name;
-
-              return [
-                previousChat,
-                ...prev.filter((chat) => chat.messagesWith !== newMsg.sender),
-              ];
-            });
-          }
-
-          //IF NO PREVIOUS CHAT WITH THE SENDER
-          else {
-            const { name, profilePicUrl } = await getUserInfo(newMsg.sender);
-            senderName = name;
-
-            const newChat = {
+      if (!chatExists) {
+        const { name, profilePicUrl } = await getUserInfo(newMsg.sender);
+        setChats((prev) => {
+          if (prev.some((c) => c.messagesWith === newMsg.sender)) return prev;
+          return [
+            {
               messagesWith: newMsg.sender,
               name,
               profilePicUrl,
               lastMessage: newMsg.msg,
               date: newMsg.date,
-            };
-            setChats((prev) => [newChat, ...prev]);
-          }
-        }
-      });
-    }
-  }, []);
+            },
+            ...prev,
+          ];
+        });
+      }
+    };
+
+    s.on("msgSent", onMsgSent);
+    s.on("newMsgReceived", onNewMsgReceived);
+
+    return () => {
+      s.off("msgSent", onMsgSent);
+      s.off("newMsgReceived", onNewMsgReceived);
+    };
+  }, [user._id]);
 
   useEffect(() => {
-    messages.length > 0 && scrollDivToBottom(divRef);
+    if (messages.length > 0) scrollDivToBottom(divRef);
   }, [messages]);
 
   const deleteMsg = (messageId) => {
-    if (socket.current) {
-      socket.current.emit("deleteMsg", {
-        userId: user._id,
-        messagesWith: openChatId.current,
-        messageId,
-      });
+    const s = socket.current;
+    if (!s) return;
 
-      socket.current.on("msgDeleted", () => {
-        setMessages((prev) =>
-          prev.filter((message) => message._id !== messageId)
-        );
-      });
-    }
+    s.emit("deleteMsg", {
+      userId: user._id,
+      messagesWith: openChatId.current,
+      messageId,
+    });
+
+    const onDeleted = () => {
+      setMessages((prev) =>
+        prev.filter((message) => message._id !== messageId)
+      );
+      s.off("msgDeleted", onDeleted);
+    };
+    s.on("msgDeleted", onDeleted);
   };
 
   const deleteChat = async (messagesWith) => {
@@ -229,90 +299,87 @@ function messages({ chatsData, user }) {
       await axios.delete(`${baseUrl}/api/chats/${messagesWith}`, {
         headers: { Authorization: cookie.get("token") },
       });
-
       setChats((prev) =>
         prev.filter((chat) => chat.messagesWith !== messagesWith)
       );
       router.push("/messages", undefined, { shallow: true });
-    } catch (error) {
+    } catch {
       alert("Error deleting chat");
     }
   };
-  return (
-    <>
-      <Paper className={classes.root}>
-        <Grid container>
-          <Grid item xs={12} sm={12} md={6} lg={4}>
-            <Box component="div">
-              <SearchChat chats={chats} setChats={setChats} />
-            </Box>
 
-            <Box component="div" className={classes.chatList}>
-              {chats.length > 0 ? (
-                <>
-                  {chats.map((chat, i) => (
-                    <Chat
-                      connectedUsers={connectedUsers}
-                      key={i}
-                      chatIndex={i}
-                      user={user}
-                      chat={chat}
-                      deleteChat={deleteChat}
-                    />
-                  ))}
-                </>
+  return (
+    <Box className={classes.shell}>
+      <Box className={classes.sidebar}>
+        <Box className={classes.sidebarSearch}>
+          <SearchChat chats={chats} setChats={setChats} />
+        </Box>
+        <List disablePadding className={classes.chatList}>
+          {chats.length > 0 ? (
+            chats.map((chat, i) => (
+              <Chat
+                connectedUsers={connectedUsers}
+                key={chat.messagesWith || i}
+                chatIndex={i}
+                user={user}
+                chat={chat}
+                deleteChat={deleteChat}
+              />
+            ))
+          ) : (
+            <NoChats />
+          )}
+        </List>
+      </Box>
+
+      <Box className={classes.main}>
+        {router.query.message ? (
+          <>
+            <UserInfo chatWithData={chatWithData} />
+            <Box className={classes.messagesArea}>
+              {messages.length > 0 ? (
+                messages.map((message, i) => (
+                  <Messages
+                    divRef={i === messages.length - 1 ? divRef : null}
+                    deleteMsg={deleteMsg}
+                    message={message}
+                    user={user}
+                    userProfilePic={chatWithData.profilePicUrl}
+                    key={message._id || i}
+                  />
+                ))
               ) : (
-                <NoChats />
+                <Typography variant="body2" color="textSecondary" align="center">
+                  No messages yet. Say hi!
+                </Typography>
               )}
             </Box>
-          </Grid>
-          <Grid item xs={12} sm={12} md={6} lg={8}>
-            {/* {loading ? (
-              <CircularProgress />
-            ) : (
-              <> */}
-            {router.query.message && (
-              <>
-                <UserInfo chatWithData={chatWithData} />
-                <Paper className={classes.MessageContent}>
-                  {messages.length > 0 &&
-                    messages.map((message, i) => (
-                      <Messages
-                        divRef={divRef}
-                        deleteMsg={deleteMsg}
-                        message={message}
-                        user={user}
-                        userProfilePic={chatWithData.profilePicUrl}
-                        key={i}
-                      />
-                    ))}
-                </Paper>
-
-                <ChatInputField sendMsg={sendMsg} />
-              </>
-            )}
-            {/* </>
-            )} */}
-          </Grid>
-        </Grid>
-      </Paper>
-    </>
+            <Box className={classes.inputArea}>
+              <ChatInputField sendMsg={sendMsg} />
+            </Box>
+          </>
+        ) : (
+          <Box className={classes.emptyMain}>
+            <Typography variant="h6" className={classes.emptyText}>
+              Select a conversation or search for someone to message
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 }
 
-messages.getInitialProps = async (ctx) => {
+MessagesPage.getInitialProps = async (ctx) => {
   try {
-    // setLoading(true);
     const { token } = parseCookies(ctx);
-
     const res = await axios.get(`${baseUrl}/api/chats`, {
       headers: { Authorization: token },
     });
-    // setLoading(false);
     return { chatsData: res.data };
-  } catch (error) {
-    return { errorLoading: true };
+  } catch {
+    return { chatsData: [], errorLoading: true };
   }
 };
 
-export default messages;
+export default MessagesPage;

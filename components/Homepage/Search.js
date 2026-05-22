@@ -7,45 +7,100 @@ import {
   InputAdornment,
   makeStyles,
   TextField,
-  Link,
   Avatar,
 } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
 
 let cancel;
 
-const useStyle = makeStyles({
-  root: {
-    ["&,fieldset"]: {
-      borderRadius: 15,
-    },
-  },
+const useStyle = makeStyles((theme) => ({
+  root: ({ fullWidth, variant }) => ({
+    width: fullWidth ? "100%" : 220,
+    maxWidth: "100%",
+    ...(variant === "light"
+      ? {
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 12,
+            backgroundColor: "#f8fafc",
+            color: theme.palette.text.primary,
+            minHeight: 40,
+            "& fieldset": {
+              borderColor: theme.palette.divider,
+            },
+            "&:hover fieldset": {
+              borderColor: theme.palette.primary.light,
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+          },
+          "& .MuiOutlinedInput-input": {
+            padding: "8px 10px",
+            fontSize: "0.875rem",
+            color: theme.palette.text.primary,
+          },
+          "& .MuiInputAdornment-root .MuiSvgIcon-root": {
+            color: theme.palette.text.secondary,
+            fontSize: 20,
+          },
+        }
+      : {
+          "& .MuiFormControl-root": {
+            marginBottom: 0,
+            marginTop: 0,
+          },
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 20,
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+            color: "#fff",
+            minHeight: 34,
+            padding: "0 8px",
+            "& fieldset": {
+              borderColor: "rgba(255, 255, 255, 0.35)",
+            },
+            "&:hover fieldset": {
+              borderColor: "rgba(255, 255, 255, 0.55)",
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: "#fff",
+            },
+          },
+          "& .MuiOutlinedInput-input": {
+            padding: "5px 8px",
+            fontSize: "0.8125rem",
+          },
+          "& .MuiInputAdornment-root": {
+            marginRight: 0,
+            "& .MuiSvgIcon-root": {
+              color: "rgba(255, 255, 255, 0.9)",
+              fontSize: 18,
+            },
+          },
+        }),
+  }),
   searchResult: {
     cursor: "pointer",
     width: "100%",
     display: "flex",
     alignItems: "center",
+    gap: theme.spacing(1),
   },
-  input: {
-    color: "#fff",
-    height: 1,
-  },
-});
+}));
 
-function Search() {
-  const classes = useStyle();
+function Search({ fullWidth = false, variant = "navbar", onNavigate }) {
+  const classes = useStyle({ fullWidth, variant });
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
   const handleChange = async (e) => {
     const { value } = e.target;
-
     setText(value);
 
-    if (value.length === 0) return;
-
-    if (value.trim().length === 0) return;
+    if (value.trim().length === 0) {
+      setResults([]);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -60,71 +115,66 @@ function Search() {
         }),
       });
 
-      if (res.data.length === 0) {
-        results.length > 0 && setResults([]);
-        return setLoading(false);
-      }
-
-      setResults(res.data);
+      setResults(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.log("Error Searching");
+      if (!axios.isCancel(error)) {
+        setResults([]);
+      }
     }
 
     setLoading(false);
   };
+
   useEffect(() => {
     if (text.length === 0 && loading) {
       setLoading(false);
     }
-  }, [text]);
+  }, [text, loading]);
 
-  const options = results ? results.map((result) => result) : [];
+  const goToProfile = (id) => {
+    if (onNavigate) onNavigate();
+    window.location.href = `/${id}`;
+  };
 
   return (
     <Autocomplete
       freeSolo
-      id="autocmplete-clickable"
-      options={options}
+      id={fullWidth ? "autocomplete-search-mobile" : "autocomplete-search"}
+      options={results}
+      loading={loading}
       autoHighlight
-      getOptionLabel={(result) => result.name}
+      getOptionLabel={(result) =>
+        typeof result === "string" ? result : result.name
+      }
       renderOption={(result) => (
-        <>
-          <div
-            className={classes.searchResult}
-            onClick={() => {
-              window.location.href = `/${result.username}`;
-            }}
-          >
-            <Avatar
-              src={result.profilePicUrl}
-              style={{ marginRight: ".5rem" }}
-            />
-            {result.name}
-          </div>
-        </>
+        <div
+          className={classes.searchResult}
+          onClick={() => goToProfile(result._id)}
+        >
+          <Avatar src={result.profilePicUrl} style={{ width: 28, height: 28 }} />
+          {result.name}
+        </div>
       )}
       renderInput={(params) => (
         <TextField
           {...params}
+          size="small"
           onBlur={() => {
-            results.length > 0 && setResults([]);
-            loading && setLoading(false);
-            setText("");
+            setResults([]);
+            setLoading(false);
           }}
           variant="outlined"
-          placeholder="Search"
+          placeholder="Search people"
           className={classes.root}
           autoComplete="off"
           value={text}
-          style={{ width: 150 }}
           onChange={handleChange}
           InputProps={{
-            classes: { input: classes.input },
             ...params.InputProps,
             startAdornment: (
               <>
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon fontSize="small" />
                 </InputAdornment>
                 {params.InputProps.startAdornment}
               </>
