@@ -11,10 +11,4 @@ module.exports = {
         ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
         : ""),
   },
-  webpack: (config, { dev }) => {
-    if (!dev) {
-      config.parallelism = 1;
-    }
-    return config;
-  },
 };
