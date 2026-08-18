@@ -33,6 +33,7 @@ import {
   USERNAME_REGEX,
   isValidEmail,
   isValidPassword,
+  isValidUsername,
 } from "../utils/validation";
 
 export const DEMO_LOGIN_EMAIL = "johndoe@gmail.com";
