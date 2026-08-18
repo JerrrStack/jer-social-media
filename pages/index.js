@@ -19,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
 
 function Index({ user, postsData, userFollowStats: initialFollowStats, errorLoading }) {
   const classes = useStyles();
-  const [posts, setPosts] = useState(postsData);
+  const [posts, setPosts] = useState(postsData || []);
   const [userFollowStats, setUserFollowStats] = useState(
     initialFollowStats || { following: [], followers: [] }
   );
@@ -29,7 +29,7 @@ function Index({ user, postsData, userFollowStats: initialFollowStats, errorLoad
   return (
     <Box className={classes.feed}>
       <CardPost user={user} setPosts={setPosts} />
-      {posts.length === 0 || errorLoading ? (
+      {errorLoading || posts.length === 0 ? (
         <NoPost />
       ) : (
         posts.map((post) => (

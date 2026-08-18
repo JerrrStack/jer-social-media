@@ -3,6 +3,9 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Follower = require("../models/Follower");
+const Profile = require("../models/Profile");
+const Notification = require("../models/Notification");
+const Chat = require("../models/Chat");
 const validateRequest = require("../middleware/validateRequest");
 const {
   isValidEmail,
@@ -16,9 +19,31 @@ const router = express.Router();
 router.get("/", validateRequest, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
     let userFollowStats = await Follower.findOne({ user: req.userId });
     if (!userFollowStats) {
-      userFollowStats = { followers: [], following: [] };
+      const [followerDoc] = await Promise.all([
+        new Follower({
+          user: req.userId,
+          followers: [],
+          following: [],
+        }).save(),
+        Profile.findOne({ user: req.userId }).then(
+          (doc) => doc || new Profile({ user: req.userId }).save()
+        ),
+        Notification.findOne({ user: req.userId }).then(
+          (doc) =>
+            doc ||
+            new Notification({ user: req.userId, notifications: [] }).save()
+        ),
+        Chat.findOne({ user: req.userId }).then(
+          (doc) => doc || new Chat({ user: req.userId, chats: [] }).save()
+        ),
+      ]);
+      userFollowStats = followerDoc;
     }
 
     const { unreadMessageCount, unreadNotificationCount } =

@@ -71,6 +71,8 @@ router.get("/", validateRequest, async (req, res) => {
         .populate("user")
         .populate("comments.user");
     }
+    posts = posts.filter((post) => post.user && post.user._id);
+
     if (posts.length === 0) {
       return res.json([]);
     }
@@ -80,16 +82,17 @@ router.get("/", validateRequest, async (req, res) => {
     const { userId } = req;
 
     const loggedUser = await Follower.findOne({ user: userId });
+    const following = loggedUser?.following || [];
 
-    if (loggedUser.following.length === 0) {
+    if (following.length === 0) {
       postsToBeSent = posts.filter(
         (post) => post.user._id.toString() === userId
       );
     } else {
-      for (let i = 0; i < loggedUser.following.length; i++) {
+      for (let i = 0; i < following.length; i++) {
         const foundPostsFromFollowing = posts.filter(
           (post) =>
-            post.user._id.toString() === loggedUser.following[i].user.toString()
+            post.user._id.toString() === following[i].user.toString()
         );
 
         if (foundPostsFromFollowing.length > 0) {
