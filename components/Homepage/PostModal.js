@@ -170,7 +170,7 @@ export default function PostModal({
                   >
                     {checkTime(post.createdAt)}
                   </Typography>
-                  <div>{post.text}</div>
+                  <div>{post.text && post.text.trim() ? post.text : null}</div>
                 </>
               }
             />
@@ -250,7 +250,7 @@ export default function PostModal({
                 >
                   {checkTime(post.createdAt)}
                 </Typography>
-                <div>{post.text}</div>
+                <div>{post.text && post.text.trim() ? post.text : null}</div>
               </>
             }
           />

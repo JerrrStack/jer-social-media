@@ -39,7 +39,9 @@ const useStyles = makeStyles((theme) => ({
     height: ICON_SIZE,
     padding: 8,
     boxSizing: "border-box",
-    color: "#fff",
+    color: "#ffffff",
+    backgroundColor: "transparent",
+    borderRadius: 8,
     verticalAlign: "middle",
     "&:hover": {
       backgroundColor: "rgba(255, 255, 255, 0.12)",

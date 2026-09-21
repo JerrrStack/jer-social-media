@@ -19,6 +19,10 @@ import ProfileLink from "../Profile/ProfileLink";
 import Comments from "./Comments";
 import { likeComment, unlikeComment } from "../../utils/postActions";
 import { getCommentId } from "../../utils/getCommentId";
+import {
+  isMediaMessage,
+  renderMentionText,
+} from "../../utils/renderMentions";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -75,6 +79,20 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "0.9rem",
     lineHeight: 1.45,
     wordBreak: "break-word",
+    whiteSpace: "pre-wrap",
+  },
+  gif: {
+    display: "block",
+    maxWidth: "100%",
+    maxHeight: 220,
+    borderRadius: 10,
+    marginTop: theme.spacing(0.75),
+  },
+  mention: {
+    color: theme.palette.primary.main,
+    fontWeight: 650,
+    textDecoration: "none",
+    "&:hover": { textDecoration: "underline" },
   },
   actions: {
     display: "flex",
@@ -124,6 +142,7 @@ function AllComments({
   const isLiked =
     likeCount > 0 &&
     likes.some((like) => String(like.user) === String(user._id));
+  const isGif = isMediaMessage(comment.text);
 
   const toggleLike = () => {
     if (isLiked) {
@@ -200,7 +219,17 @@ function AllComments({
               </>
             )}
           </Box>
-          <Typography className={classes.text}>{comment.text}</Typography>
+          {isGif ? (
+            <img
+              src={comment.text.trim()}
+              alt="GIF"
+              className={classes.gif}
+            />
+          ) : (
+            <Typography className={classes.text} component="div">
+              {renderMentionText(comment.text, classes.mention)}
+            </Typography>
+          )}
           <Box className={classes.actions}>
             <IconButton
               size="small"

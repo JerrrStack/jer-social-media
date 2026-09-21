@@ -27,31 +27,68 @@ import PostModal from "./PostModal";
 import Sidebar from "./Sidebar";
 import { getDisplayName } from "../../utils/displayUser";
 import ProfileLink from "../Profile/ProfileLink";
+import { renderMentionText } from "../../utils/renderMentions";
 
 const useStyles = makeStyles((theme) => ({
   root: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
   },
-
   viewMore: {
     textAlign: "center",
+  },
+  postText: {
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    fontSize: "0.98rem",
+    lineHeight: 1.45,
+  },
+  mention: {
+    color: theme.palette.primary.main,
+    fontWeight: 700,
+    textDecoration: "none",
+  },
+  hashtag: {
+    display: "inline",
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    margin: 0,
+    cursor: "pointer",
+    color: theme.palette.primary.main,
+    fontWeight: 700,
+    fontSize: "inherit",
+    fontFamily: "inherit",
+    lineHeight: "inherit",
+    "&:hover": {
+      textDecoration: "underline",
+    },
+    "&.is-active": {
+      backgroundColor: "rgba(24, 119, 242, 0.12)",
+      borderRadius: 4,
+      padding: "0 3px",
+    },
+  },
+  likeBtn: {
+    minWidth: 0,
+    borderRadius: 8,
+    textTransform: "none",
+    fontWeight: 650,
   },
   postPicture: {
     cursor: "pointer",
     display: "block",
     width: "100%",
-    maxHeight: 480,
-    objectFit: "contain",
-    borderRadius: 8,
-    backgroundColor: theme.palette.grey[100],
+    maxHeight: 560,
+    objectFit: "cover",
+    backgroundColor: "#000",
   },
   media: {
     textAlign: "center",
-    padding: theme.spacing(0, 2, 2),
+    padding: 0,
     "&:last-child": {
-      paddingBottom: theme.spacing(2),
+      paddingBottom: 0,
     },
   },
 }));
@@ -63,6 +100,8 @@ export default function NewsFeed({
   setShowToastr,
   userFollowStats,
   onFollowStatsChange,
+  activeTag,
+  onSelectTag,
 }) {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -86,7 +125,7 @@ export default function NewsFeed({
   };
 
   return (
-    <Card className={classes.root}>
+    <Card className={`${classes.root} sayhi-fade-up`}>
       <CardHeader
         avatar={
           <ProfileLink
@@ -105,6 +144,7 @@ export default function NewsFeed({
           <>
             <Button
               size="small"
+              className={classes.likeBtn}
               onClick={() =>
                 likePost(post._id, user._id, setLikes, isLiked ? false : true)
               }
@@ -114,8 +154,7 @@ export default function NewsFeed({
               ) : (
                 <FavoriteBorderIcon />
               )}
-
-              <span>{likes.length}</span>
+              <span style={{ marginLeft: 6 }}>{likes.length}</span>
             </Button>
             {user._id === post.user._id ? (
               <>
@@ -178,11 +217,24 @@ export default function NewsFeed({
         }
       />
 
-      <CardContent>
-        <Typography variant="body2" component="p">
-          {post.text}
-        </Typography>
-      </CardContent>
+      {Boolean(post.text && post.text.trim()) && (
+        <CardContent>
+          <Typography variant="body2" component="p" className={classes.postText}>
+            {renderMentionText(post.text, classes.mention, {
+              onHashtagClick: (tag) => {
+                if (!onSelectTag) return;
+                if (activeTag && activeTag.toLowerCase() === tag.toLowerCase()) {
+                  onSelectTag(null);
+                } else {
+                  onSelectTag(tag);
+                }
+              },
+              hashtagClassName: classes.hashtag,
+              activeTag,
+            })}
+          </Typography>
+        </CardContent>
+      )}
 
       {post.picUrl ? (
         <CardContent className={classes.media}>

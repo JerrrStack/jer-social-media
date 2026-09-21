@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import { makeStyles, Typography, IconButton, Avatar, Box } from "@material-ui/core";
 import checkTime from "../../utils/checkTime";
 import DeleteIcon from "@material-ui/icons/Delete";
+import {
+  isMediaMessage,
+  renderMentionText,
+} from "../../utils/renderMentions";
 
 const useStyles = makeStyles((theme) => ({
   row: {
@@ -19,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
   bubble: {
     maxWidth: "70%",
     padding: theme.spacing(1, 1.5),
-    borderRadius: 16,
+    borderRadius: 18,
     wordBreak: "break-word",
   },
   bubbleSent: {
@@ -28,9 +32,26 @@ const useStyles = makeStyles((theme) => ({
     borderBottomRightRadius: 4,
   },
   bubbleReceived: {
-    backgroundColor: theme.palette.grey[200],
+    backgroundColor: "#E4E6EB",
     color: theme.palette.text.primary,
     borderBottomLeftRadius: 4,
+  },
+  mediaBubble: {
+    padding: 4,
+    backgroundColor: "transparent",
+    maxWidth: "72%",
+  },
+  mediaImg: {
+    display: "block",
+    width: "100%",
+    maxWidth: 240,
+    borderRadius: 14,
+    backgroundColor: "#111",
+  },
+  mention: {
+    color: "inherit",
+    fontWeight: 700,
+    textDecoration: "underline",
   },
   time: {
     display: "block",
@@ -63,6 +84,7 @@ function MessageItem({
   const classes = useStyles();
   const [ifHover, setIfHover] = useState(false);
   const ifYouSender = message.sender === user._id;
+  const isMedia = isMediaMessage(message.msg);
 
   return (
     <Box
@@ -75,11 +97,7 @@ function MessageItem({
       onMouseLeave={() => setIfHover(false)}
     >
       {!ifYouSender && (
-        <Avatar
-          src={userProfilePic}
-          className={classes.avatar}
-          alt=""
-        />
+        <Avatar src={userProfilePic} className={classes.avatar} alt="" />
       )}
 
       {ifYouSender && ifHover && (
@@ -95,16 +113,30 @@ function MessageItem({
 
       <Box
         className={`${classes.bubble} ${
-          ifYouSender ? classes.bubbleSent : classes.bubbleReceived
+          isMedia
+            ? classes.mediaBubble
+            : ifYouSender
+            ? classes.bubbleSent
+            : classes.bubbleReceived
         }`}
       >
-        <Typography variant="body2" style={{ lineHeight: 1.4 }}>
-          {message.msg}
-        </Typography>
+        {isMedia ? (
+          <img
+            src={message.msg.trim()}
+            alt="GIF"
+            className={classes.mediaImg}
+            loading="lazy"
+          />
+        ) : (
+          <Typography variant="body2" style={{ lineHeight: 1.4 }}>
+            {renderMentionText(message.msg, classes.mention)}
+          </Typography>
+        )}
         <Typography
           component="span"
           className={classes.time}
           variant="caption"
+          style={isMedia ? { color: "#65676B", paddingLeft: 4 } : undefined}
         >
           {checkTime(message.date)}
         </Typography>

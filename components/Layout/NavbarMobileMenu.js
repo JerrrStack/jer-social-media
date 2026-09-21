@@ -29,8 +29,12 @@ const DRAWER_WIDTH = 300;
 
 const useStyles = makeStyles((theme) => ({
   menuBtn: {
-    color: "#fff",
+    color: "#ffffff",
+    backgroundColor: "transparent",
     padding: 8,
+    "&:hover": {
+      backgroundColor: "rgba(255, 255, 255, 0.12)",
+    },
   },
   drawerPaper: {
     width: DRAWER_WIDTH,

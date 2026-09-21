@@ -11,7 +11,8 @@
     "dev:3001": "node --openssl-legacy-provider scripts/start-local.js 3001",
     "design": "next dev",
     "build": "node scripts/build.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@fontsource/roboto": "^4.3.0",

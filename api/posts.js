@@ -11,6 +11,11 @@ const {
   newCommentNotification,
   removeCommentNotification,
 } = require("../utilsServer/notificationActions");
+const {
+  sanitizePostText,
+  sanitizeCommentText,
+  isMediaUrl,
+} = require("../utils/sanitizeText");
 
 const findCommentById = (comments, commentId) => {
   const target = String(commentId);
@@ -21,19 +26,32 @@ const findCommentById = (comments, commentId) => {
 router.post("/", validateRequest, async (req, res) => {
   const { text, location, picUrl } = req.body;
   const { userId } = req;
-  const postText = (text || "").trim();
 
-  if (postText.length < 1 && !picUrl) {
+  const textCheck = sanitizePostText(text);
+  if (!textCheck.ok) {
+    return res.status(400).json({ message: textCheck.message });
+  }
+
+  const safePic =
+    typeof picUrl === "string" && picUrl.trim() ? picUrl.trim() : null;
+  if (safePic && !isMediaUrl(safePic) && !/^https?:\/\//i.test(safePic)) {
+    return res.status(400).json({ message: "Invalid image URL." });
+  }
+
+  if (!textCheck.value && !safePic) {
     return res
       .status(400)
       .json({ message: "Add text or an image to create a post" });
   }
 
   try {
-    const createPost = { user: userId, text: postText || " " };
+    const createPost = { user: userId, text: textCheck.value || " " };
 
-    if (location) createPost.location = location;
-    if (picUrl) createPost.picUrl = picUrl;
+    if (location) {
+      const loc = sanitizePostText(location);
+      if (loc.ok && loc.value) createPost.location = loc.value;
+    }
+    if (safePic) createPost.picUrl = safePic;
 
     const post = await new Post(createPost).save();
 
@@ -274,8 +292,9 @@ router.post("/comment/:postId", validateRequest, async (req, res) => {
       return res.status(404).send("Post not found");
     }
 
-    if (!text || text.trim().length < 1) {
-      return res.status(401).send("Text must be atleast 1 character");
+    const textCheck = sanitizeCommentText(text);
+    if (!textCheck.ok) {
+      return res.status(400).json({ message: textCheck.message });
     }
 
     if (parentCommentId) {
@@ -289,7 +308,7 @@ router.post("/comment/:postId", validateRequest, async (req, res) => {
     const commentId = uuid();
     const commentPayload = {
       _id: commentId,
-      text: text.trim(),
+      text: textCheck.value,
       user: req.userId,
       date: new Date(),
     };
@@ -310,7 +329,7 @@ router.post("/comment/:postId", validateRequest, async (req, res) => {
         commentId,
         userId,
         post.user.toString(),
-        text
+        textCheck.value
       );
     }
 

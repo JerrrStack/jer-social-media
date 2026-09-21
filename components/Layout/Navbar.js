@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: theme.spacing(1.5),
     display: "flex",
     flexWrap: "nowrap",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: theme.spacing(1),
     overflow: "visible",
     [theme.breakpoints.up("sm")]: {
@@ -33,29 +33,37 @@ const useStyles = makeStyles((theme) => ({
   },
   brand: {
     flexShrink: 0,
-    alignSelf: "center",
-    fontWeight: 700,
-    letterSpacing: "-0.02em",
-    fontSize: "1.15rem",
+    fontWeight: 800,
+    letterSpacing: "-0.03em",
+    fontSize: "1.5rem",
+    lineHeight: 1.25,
+    overflow: "visible",
+    color: "#ffffff !important",
+    marginRight: "auto",
+    paddingBottom: 2,
     [theme.breakpoints.up("sm")]: {
-      fontSize: "1.25rem",
-      marginRight: theme.spacing(1),
+      fontSize: "1.65rem",
     },
+  },
+  brandLink: {
+    color: "#ffffff !important",
+    textDecoration: "none !important",
+    display: "inline-block",
+    lineHeight: 1.25,
+    overflow: "visible",
   },
   rightSection: {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: theme.spacing(1),
     flexShrink: 0,
-    marginLeft: "auto",
     minWidth: 0,
   },
   desktopNav: {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: theme.spacing(2),
     minWidth: 0,
-    flex: 1,
     justifyContent: "flex-end",
     [theme.breakpoints.down("md")]: {
       display: "none",
@@ -63,7 +71,7 @@ const useStyles = makeStyles((theme) => ({
   },
   mobileNav: {
     display: "none",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: theme.spacing(0.5),
     [theme.breakpoints.down("md")]: {
       display: "flex",
@@ -73,13 +81,14 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
     gap: theme.spacing(1),
-    color: "inherit",
+    color: "#ffffff",
     textDecoration: "none",
     padding: theme.spacing(0.5, 1),
-    borderRadius: 8,
+    borderRadius: 18,
     flexShrink: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.12)",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
       textDecoration: "none",
     },
   },
@@ -139,7 +148,7 @@ function Navbar({ user }) {
           <Toolbar className={classes.toolbar} disableGutters={false}>
             <Typography variant="h6" className={classes.brand} noWrap>
               <Link href="/">
-                <a style={{ color: "inherit", textDecoration: "none" }}>SayHi</a>
+                <a className={classes.brandLink}>SayHi</a>
               </Link>
             </Typography>
 

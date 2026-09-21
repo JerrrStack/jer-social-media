@@ -51,10 +51,43 @@ const useStyles = makeStyles((theme) => ({
     objectFit: "cover",
     display: "block",
   },
+  coverOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "55%",
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%)",
+    pointerEvents: "none",
+  },
+  coverIdentity: {
+    position: "absolute",
+    left: AVATAR_SIZE + theme.spacing(4),
+    right: theme.spacing(10),
+    bottom: theme.spacing(2),
+    zIndex: 2,
+    [theme.breakpoints.down("xs")]: {
+      display: "none",
+    },
+  },
+  coverName: {
+    fontWeight: 800,
+    fontSize: "1.5rem",
+    lineHeight: 1.2,
+    color: "#ffffff !important",
+    textShadow: "0 1px 3px rgba(0,0,0,0.45)",
+  },
+  coverHandle: {
+    color: "rgba(255,255,255,0.9) !important",
+    textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+    fontSize: "0.95rem",
+  },
   coverUpload: {
     position: "absolute",
     right: theme.spacing(1.5),
     bottom: theme.spacing(1.5),
+    zIndex: 3,
     backgroundColor: "rgba(255,255,255,0.9)",
     color: theme.palette.text.primary,
     boxShadow: theme.shadows[2],
@@ -63,21 +96,25 @@ const useStyles = makeStyles((theme) => ({
   infoSection: {
     display: "grid",
     gridTemplateColumns: `${AVATAR_SIZE}px 1fr auto`,
-    gap: theme.spacing(3),
-    alignItems: "center",
-    padding: theme.spacing(3, 2.5, 2.5),
+    gap: theme.spacing(2, 3),
+    alignItems: "end",
+    padding: theme.spacing(1, 2.5, 2),
     marginTop: -(AVATAR_SIZE / 2),
+    position: "relative",
+    zIndex: 2,
     [theme.breakpoints.down("xs")]: {
       gridTemplateColumns: "1fr",
       justifyItems: "center",
       textAlign: "center",
+      alignItems: "center",
       marginTop: -(AVATAR_SIZE / 2),
-      paddingTop: theme.spacing(2.5),
+      paddingTop: theme.spacing(1),
     },
   },
   avatarWrap: {
     position: "relative",
     justifySelf: "start",
+    zIndex: 3,
     [theme.breakpoints.down("xs")]: {
       justifySelf: "center",
     },
@@ -100,8 +137,7 @@ const useStyles = makeStyles((theme) => ({
   },
   identity: {
     minWidth: 0,
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
+    paddingBottom: theme.spacing(0.5),
     paddingLeft: theme.spacing(0.5),
     [theme.breakpoints.down("xs")]: {
       width: "100%",
@@ -109,12 +145,21 @@ const useStyles = makeStyles((theme) => ({
       paddingTop: theme.spacing(1.5),
     },
   },
-  name: {
+  nameMobile: {
+    display: "none",
     fontWeight: 700,
-    fontSize: "1.35rem",
-    lineHeight: 1.3,
-    letterSpacing: "-0.02em",
-    marginBottom: theme.spacing(0.5),
+    fontSize: "1.25rem",
+    color: theme.palette.text.primary,
+    [theme.breakpoints.down("xs")]: {
+      display: "block",
+    },
+  },
+  handleMobile: {
+    display: "none",
+    color: theme.palette.text.secondary,
+    [theme.breakpoints.down("xs")]: {
+      display: "block",
+    },
   },
   handle: {
     color: theme.palette.text.secondary,
@@ -239,6 +284,15 @@ export default function ProfileHeader({
             className={classes.coverImg}
           />
         )}
+        <Box className={classes.coverOverlay} />
+        <Box className={classes.coverIdentity}>
+          <Typography className={classes.coverName} component="h1" noWrap>
+            {getDisplayName(profile.user)}
+          </Typography>
+          <Typography className={classes.coverHandle} noWrap>
+            @{profile.user.username}
+          </Typography>
+        </Box>
         {isOwnProfile && (
           <>
             <input
@@ -294,10 +348,10 @@ export default function ProfileHeader({
           </Box>
 
           <Box className={classes.identity}>
-            <Typography className={classes.name} component="h1" noWrap>
+            <Typography className={classes.nameMobile} component="h1" noWrap>
               {getDisplayName(profile.user)}
             </Typography>
-            <Typography className={classes.handle} noWrap>
+            <Typography className={classes.handleMobile} noWrap>
               @{profile.user.username}
             </Typography>
             <Box className={classes.stats}>

@@ -36,7 +36,7 @@ import {
   isValidUsername,
 } from "../utils/validation";
 
-export const DEMO_LOGIN_EMAIL = "johndoe@gmail.com";
+export const DEMO_LOGIN_EMAIL = "Jerome@sayHi.app";
 export const DEMO_LOGIN_PASSWORD = "test123";
 
 const useStyles = makeStyles((theme) => ({
@@ -295,7 +295,7 @@ function LoginPage() {
           </Box>
 
           <Alert severity="info" className={classes.demoHint} icon={false}>
-            Demo login pre-filled — you can edit email and password anytime.
+            Demo: Jerome@sayHi.app / test123 — edit anytime.
           </Alert>
 
           <Tabs

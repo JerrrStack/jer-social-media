@@ -16,6 +16,7 @@ import FiberManualRecordIcon from "@material-ui/icons/FiberManualRecord";
 import { green, grey } from "@material-ui/core/colors";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { getDisplayName } from "../../utils/displayUser";
+import { isMediaMessage } from "../../utils/renderMentions";
 
 const useStyles = makeStyles((theme) => ({
   item: {
@@ -104,10 +105,12 @@ function Chat({ chat, deleteChat, chatIndex, connectedUsers }) {
     deleteChat(chat.messagesWith);
   };
 
-  const preview =
-    chat.lastMessage?.length > 28
-      ? `${chat.lastMessage.substring(0, 28)}...`
-      : chat.lastMessage || "No messages yet";
+  const rawPreview = chat.lastMessage || "No messages yet";
+  const preview = isMediaMessage(rawPreview)
+    ? "🎬 GIF"
+    : rawPreview.length > 28
+    ? `${rawPreview.substring(0, 28)}...`
+    : rawPreview;
 
   return (
     <ListItem

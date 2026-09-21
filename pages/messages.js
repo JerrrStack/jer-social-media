@@ -76,12 +76,13 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     overflowY: "auto",
     padding: theme.spacing(2),
-    backgroundColor: "#f8fafc",
+    background:
+      "linear-gradient(180deg, #F0F2F5 0%, #E8EAED 100%)",
     minHeight: 0,
   },
   inputArea: {
     flexShrink: 0,
-    padding: theme.spacing(1.5, 2),
+    padding: theme.spacing(1.25, 1.5),
     borderTop: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
   },
@@ -91,7 +92,8 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     justifyContent: "center",
     padding: theme.spacing(4),
-    backgroundColor: "#f8fafc",
+    background:
+      "linear-gradient(180deg, #F0F2F5 0%, #E8EAED 100%)",
   },
   emptyText: {
     color: theme.palette.text.secondary,
@@ -264,10 +266,15 @@ function MessagesPage({ chatsData, user }) {
 
     s.on("msgSent", onMsgSent);
     s.on("newMsgReceived", onNewMsgReceived);
+    const onMsgError = ({ error }) => {
+      if (error) alert(error);
+    };
+    s.on("msgError", onMsgError);
 
     return () => {
       s.off("msgSent", onMsgSent);
       s.off("newMsgReceived", onNewMsgReceived);
+      s.off("msgError", onMsgError);
     };
   }, [user._id]);
 

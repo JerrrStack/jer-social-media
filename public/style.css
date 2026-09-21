@@ -1,12 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family: "Inter", "Roboto", "Helvetica", "Arial", sans-serif;
-  background-color: #f1f5f9;
-  color: #0f172a;
+  font-family: "Plus Jakarta Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  background-color: #f0f2f5;
+  color: #050505;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -17,20 +17,41 @@ body {
 }
 
 a {
-  color: #6366f1;
+  color: #1877f2;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 #nprogress .bar {
-  background: #6366f1 !important;
+  background: #1877f2 !important;
   height: 3px !important;
 }
 
 #nprogress .peg {
-  box-shadow: 0 0 10px #6366f1, 0 0 5px #6366f1 !important;
+  box-shadow: 0 0 10px #1877f2, 0 0 5px #1877f2 !important;
 }
 
 img,
 video {
   max-width: 100%;
   height: auto;
+}
+
+/* Soft entrance for feed cards */
+@keyframes sayhiFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sayhi-fade-up {
+  animation: sayhiFadeUp 0.35s ease-out both;
 }

@@ -2,7 +2,9 @@ import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
+import Button from "@material-ui/core/Button";
 import SentimentVeryDissatisfiedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
+import DynamicFeedIcon from "@material-ui/icons/DynamicFeed";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -23,18 +25,41 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.primary.main,
     fontSize: 32,
   },
+  btn: {
+    marginTop: theme.spacing(1),
+    textTransform: "none",
+    fontWeight: 700,
+    borderRadius: 8,
+  },
 }));
 
-export default function NoPost() {
+export default function NoPost({ filtered, tag, onClearFilter }) {
   const classes = useStyles();
 
   return (
     <Paper className={classes.root} elevation={0}>
       <div className={classes.inner}>
         <SentimentVeryDissatisfiedIcon className={classes.icon} />
-        <Typography variant="body1">
-          No posts yet. Follow someone to see their updates in your feed.
-        </Typography>
+        {filtered ? (
+          <>
+            <Typography variant="body1">
+              No posts with #{tag} in your feed yet.
+            </Typography>
+            <Button
+              color="primary"
+              variant="contained"
+              className={classes.btn}
+              startIcon={<DynamicFeedIcon />}
+              onClick={onClearFilter}
+            >
+              Latest news feed
+            </Button>
+          </>
+        ) : (
+          <Typography variant="body1">
+            No posts yet. Follow someone to see their updates in your feed.
+          </Typography>
+        )}
       </div>
     </Paper>
   );

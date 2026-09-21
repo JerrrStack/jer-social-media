@@ -7,11 +7,12 @@ import nprogress from "nprogress";
 import Router, { useRouter } from "next/router";
 import theme from "../../src/theme";
 import "@fontsource/roboto";
+import ChatPopup from "../Messages/ChatPopup";
 
 const useStyles = makeStyles((theme) => ({
   root: {
     minHeight: "90vh",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#F0F2F5",
     paddingBottom: theme.spacing(2),
   },
   main: {
@@ -26,13 +27,13 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   mainFeed: {
-    maxWidth: 960,
+    maxWidth: 1280,
     [theme.breakpoints.up("lg")]: {
-      maxWidth: 1080,
+      maxWidth: 1280,
     },
   },
   mainNarrow: {
-    maxWidth: 720,
+    maxWidth: 680,
   },
   mainWide: {
     maxWidth: 1200,
@@ -60,16 +61,15 @@ function Layout({ children, user }) {
   Router.onRouteChangeError = () => nprogress.done();
 
   return (
-    <>
+    <ThemeProvider theme={theme}>
       <HeadTags />
       <CssBaseline />
       <Navbar user={user} />
       <Box className={classes.root}>
-        <Box className={`${classes.main} ${widthClass}`}>
-          <ThemeProvider theme={theme}>{children}</ThemeProvider>
-        </Box>
+        <Box className={`${classes.main} ${widthClass}`}>{children}</Box>
       </Box>
-    </>
+      <ChatPopup user={user} />
+    </ThemeProvider>
   );
 }
 

@@ -222,6 +222,29 @@ router.post(
   }
 );
 
+// PEOPLE YOU MAY KNOW (must be before /:profileId)
+router.get("/suggestions", validateRequest, async (req, res) => {
+  try {
+    const { userId } = req;
+    const followerDoc = await Follower.findOne({ user: userId });
+    const followingIds = (followerDoc?.following || []).map((f) =>
+      f.user.toString()
+    );
+
+    const excludeIds = [userId, ...followingIds];
+
+    const users = await User.find({ _id: { $nin: excludeIds } })
+      .select("name username profilePicUrl")
+      .sort({ createdAt: -1 })
+      .limit(8);
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET PROFILE (must be last — /:profileId catches single-segment paths only)
 router.get("/:profileId", validateRequest, async (req, res) => {
   try {

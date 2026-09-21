@@ -12,10 +12,11 @@ router.get("/:searchText", validateRequest, async (req, res) => {
       return res.status(200).json([]);
     }
 
-    const namePattern = new RegExp(`^${searchText.trim()}`, "i");
+    const escaped = searchText.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`^${escaped}`, "i");
 
     const results = await User.find({
-      name: { $regex: namePattern },
+      $or: [{ name: { $regex: pattern } }, { username: { $regex: pattern } }],
     }).limit(20);
 
     const resultFilter = results.filter(

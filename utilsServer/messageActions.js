@@ -1,6 +1,7 @@
 const Chat = require("../models/Chat");
 const User = require("../models/User");
 const { chatHasUnread } = require("./getUnreadCounts");
+const { sanitizeMessageText } = require("../utils/sanitizeText");
 
 const markChatMessagesRead = async (userId, messagesWith) => {
   const chatDoc = await Chat.findOne({ user: userId });
@@ -57,6 +58,11 @@ const loadMessages = async (userId, messagesWith) => {
 
 const sendMsg = async (userId, msgSendToUserId, msg) => {
   try {
+    const textCheck = sanitizeMessageText(msg);
+    if (!textCheck.ok) {
+      return { error: textCheck.message };
+    }
+
     // LOGGED IN USER (SENDER)
     const user = await Chat.findOne({ user: userId });
 
@@ -66,7 +72,7 @@ const sendMsg = async (userId, msgSendToUserId, msg) => {
     const newMsgForSender = {
       sender: userId,
       receiver: msgSendToUserId,
-      msg,
+      msg: textCheck.value,
       date: Date.now(),
       read: true,
     };
@@ -74,7 +80,7 @@ const sendMsg = async (userId, msgSendToUserId, msg) => {
     const newMsgForReceiver = {
       sender: userId,
       receiver: msgSendToUserId,
-      msg,
+      msg: textCheck.value,
       date: Date.now(),
       read: false,
     };

@@ -66,6 +66,12 @@ io.on("connection", (socket) => {
 
   socket.on("sendNewMsg", async ({ userId, msgSendToUserId, msg }) => {
     const { newMsg, error } = await sendMsg(userId, msgSendToUserId, msg);
+
+    if (error) {
+      socket.emit("msgError", { error: String(error) });
+      return;
+    }
+
     const receiverSocket = findConnectedUser(msgSendToUserId);
 
     if (receiverSocket) {
@@ -77,7 +83,7 @@ io.on("connection", (socket) => {
       await setMsgToUnread(msgSendToUserId);
     }
 
-    !error && socket.emit("msgSent", { newMsg });
+    socket.emit("msgSent", { newMsg });
   });
 
   socket.on("deleteMsg", async ({ userId, messagesWith, messageId }) => {
@@ -90,6 +96,12 @@ io.on("connection", (socket) => {
     "sendMsgFromNotification",
     async ({ userId, msgSendToUserId, msg }) => {
       const { newMsg, error } = await sendMsg(userId, msgSendToUserId, msg);
+
+      if (error) {
+        socket.emit("msgError", { error: String(error) });
+        return;
+      }
+
       const receiverSocket = findConnectedUser(msgSendToUserId);
 
       if (receiverSocket) {
@@ -101,7 +113,7 @@ io.on("connection", (socket) => {
         await setMsgToUnread(msgSendToUserId);
       }
 
-      !error && socket.emit("msgSentFromNotification");
+      socket.emit("msgSentFromNotification");
     }
   );
 
@@ -119,6 +131,8 @@ nextApp.prepare().then(() => {
   app.use("/api/notifications", require("./api/notifications"));
 
   app.use("/api/posts", require("./api/posts"));
+  app.use("/api/gifs", require("./api/gifs"));
+  app.use("/api/trending", require("./api/trending"));
 
   app.all("*", (req, res) => handle(req, res));
 

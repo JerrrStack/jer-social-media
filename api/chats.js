@@ -16,14 +16,24 @@ router.get("/", validateRequest, async (req, res) => {
 
     let chatsToBeSent = [];
 
-    if (user.chats.length > 0) {
-      chatsToBeSent = await user.chats.map((chat) => ({
-        messagesWith: chat.messagesWith._id,
-        name: chat.messagesWith.name,
-        profilePicUrl: chat.messagesWith.profilePicUrl,
-        lastMessage: chat.messages[chat.messages.length - 1].msg,
-        date: chat.messages[chat.messages.length - 1].date,
-      }));
+    if (user?.chats?.length > 0) {
+      chatsToBeSent = user.chats
+        .filter((chat) => chat.messagesWith && chat.messages?.length)
+        .map((chat) => {
+          const last = chat.messages[chat.messages.length - 1];
+          const unread = chat.messages.some(
+            (m) =>
+              m.receiver.toString() === userId.toString() && m.read === false
+          );
+          return {
+            messagesWith: chat.messagesWith._id,
+            name: chat.messagesWith.name,
+            profilePicUrl: chat.messagesWith.profilePicUrl,
+            lastMessage: last.msg,
+            date: last.date,
+            unread,
+          };
+        });
     }
 
     return res.json(chatsToBeSent);
